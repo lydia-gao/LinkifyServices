@@ -1,6 +1,6 @@
-# SmartURL
+# Linkify
 
-SmartURL is a simple and powerful URL shortening service with support for custom aliases, QR/barcode generation, and click analytics.
+Linkify is a simple and powerful URL shortening service with support for custom aliases, QR/barcode generation, and click analytics.
 
 ## Technology Stack
 
@@ -19,5 +19,5 @@ SmartURL is a simple and powerful URL shortening service with support for custom
 
 Developers can clone and explore each repository for detailed code and docs:
 
-* **Backend Repo:** `ym2244/SmartURL-backend`
-* **Frontend Repo:** `ym2244/SmartURL-frontend`
+* **Backend Repo:** `lydia-gao/LinkifyServices`
+* **Frontend Repo:** `lydia-gao/Linkify-UI`

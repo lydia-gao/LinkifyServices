@@ -4,16 +4,18 @@
 
 ## Table of Contents
 
-- [Overview](#overview)
-- [Database Tables](#database-tables)
-  - [Table: users](#table-users)
-  - [Table: password_reset_tokens](#table-password_reset_tokens)
-  - [Table: urls](#table-urls)
-  - [Table: qrcodes](#table-qrcodes)
-  - [Table: barcodes](#table-barcodes)
-  - [Table: analytics](#table-analytics)
-- [Key Relationships](#key-relationships)
-- [Notes on Implementation](#notes-on-implementation)
+- [SmartUrl Database Schema](#smarturl-database-schema)
+  - [Table of Contents](#table-of-contents)
+  - [Overview](#overview)
+  - [Database Tables](#database-tables)
+    - [Table: users](#table-users)
+    - [Table: password\_reset\_tokens (in the future)](#table-password_reset_tokens-in-the-future)
+    - [Table: urls](#table-urls)
+    - [Table: qrcodes](#table-qrcodes)
+    - [Table: barcodes](#table-barcodes)
+    - [Table: analytics](#table-analytics)
+  - [Key Relationships](#key-relationships)
+  - [Notes on Implementation](#notes-on-implementation)
 
 ---
 
@@ -64,11 +66,11 @@ CREATE INDEX IF NOT EXISTS idx_auth_provider ON users (auth_provider, auth_provi
 
 ---
 
-### Table: password_reset_tokens
+### Table: password_reset_tokens (in the future)
 
 | Column     | Type      | Constraints                                     | Description                                   |
 | ---------- | --------- | ----------------------------------------------- | --------------------------------------------- |
-| id         | SERIAL    | PRIMARY KEY                                     | Unique identifier for each reset token record |
+| id         | SERIAL    | PRIMARY KEY                                   | Unique identifier for each reset token record |
 | user_id    | INTEGER   | NOT NULL REFERENCES users(id) ON DELETE CASCADE | User requesting the reset                     |
 | token      | TEXT      | NOT NULL UNIQUE                                 | Secure random token                           |
 | expires_at | TIMESTAMP | NOT NULL                                        | Expiration timestamp for this token           |
