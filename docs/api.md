@@ -51,7 +51,7 @@
 
 This document outlines the API endpoints for the SmartUrl service. SmartUrl allows users to:
 
-1. **User Management**
+1. **User Management (in the future)**
 
    1. Create user accounts (username/password or Google)
    2. Login and logout via JWT authentication
