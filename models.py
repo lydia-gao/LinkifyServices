@@ -12,8 +12,8 @@ class Users(Base):
     last_name = Column(String) 
     hashed_password = Column(String) # encrypted password, not plain text
 
-class ShortUrl(Base):
-    __tablename__ = 'short_urls'
+class Urls(Base):
+    __tablename__ = 'urls'
     id = Column(Integer, primary_key=True, index=True)
     original_url = Column(Text, nullable=False)
     short_code = Column(String(16), unique=True, index=True, nullable=False)
