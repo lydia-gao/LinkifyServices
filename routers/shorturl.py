@@ -1,9 +1,10 @@
 from fastapi import APIRouter, HTTPException, status, Depends, Body, Response
-from pydantic import BaseModel, HttpUrl, Field
+from pydantic import BaseModel, HttpUrl, Field, AnyUrl
 from sqlalchemy.orm import Session
 from ..models import ShortUrl
 from ..database import SessionLocal
 import string
+from typing import Annotated, Optional
 
 router = APIRouter(
 	prefix="/shorten",
@@ -17,21 +18,32 @@ def get_db():
 	finally:
 		db.close()
 
-BASE62 = string.digits + string.ascii_letters
-def encode_base62(num):
-	if num == 0:
-		return BASE62[0]
-	arr = []
-	base = len(BASE62)
-	while num:
-		num, rem = divmod(num, base)
-		arr.append(BASE62[rem])
-	arr.reverse()
-	return ''.join(arr)
+db_dependency = Annotated[Session, Depends(get_db)]
+# user_dependency = Annotated[dict, Depends(get_current_user)]
+
+ALPHABET = string.digits + string.ascii_lowercase + string.ascii_uppercase
+BASE = 62
+
+def to_base62(num: int) -> str:
+    if num == 0:
+        return ALPHABET[0]
+    s = []
+    while num:
+        num, r = divmod(num, BASE)
+        s.append(ALPHABET[r])
+    return ''.join(reversed(s))
+
+def from_base62(code: str) -> int:
+    n = 0
+    for ch in code:
+        n = n * BASE + ALPHABET.index(ch)
+    return n
 
 class ShortenRequest(BaseModel):
-	target_url: HttpUrl
-	alias: str = Field(None, min_length=3, max_length=30, pattern="^[A-Za-z0-9_-]+$")
+	original_url: AnyUrl
+	alias: Optional[str] = Field(None, min_length=3, max_length=30, pattern="^[A-Za-z0-9_-]+$")
+	title: Optional[str] = Field(None, max_length=256)
+	description: Optional[str] = None 
 
 class ShortenResponse(BaseModel):
 	original_url: str

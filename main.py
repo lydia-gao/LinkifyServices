@@ -22,6 +22,5 @@ app.include_router(barcode.router)
 app.include_router(history.router)
 app.include_router(qrcode.router)
 app.include_router(shorturl.router)
-app.include_router(shorturl.router)
 
 print("GOOGLE_CLIENT_ID:", os.getenv("GOOGLE_CLIENT_ID"))

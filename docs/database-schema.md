@@ -110,6 +110,7 @@ CREATE INDEX IF NOT EXISTS idx_prt_expires ON password_reset_tokens (expires_at)
 | short_code   | TEXT      | UNIQUE, NOT NULL  | The randomly generated code (e.g., "abc123")               |
 | alias        | TEXT      | UNIQUE, NULL      | An optional alias for the URL                              |
 | title        | TEXT      |                   | Title of the website (extracted from HTML)                 |
+| description  | TEXT      |                   | Description of the website         |
 | clicks       | INTEGER   | DEFAULT 0         | Number of times the short URL has been accessed            |
 | created_at   | TIMESTAMP | NOT NULL          | When the short URL was created                             |
 
@@ -131,7 +132,8 @@ CREATE TABLE IF NOT EXISTS urls (
     title TEXT,
     clicks INTEGER DEFAULT 0,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    alias TEXT UNIQUE NULL
+    alias TEXT UNIQUE NULL,
+    description TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_urls_user ON urls (user_id);
