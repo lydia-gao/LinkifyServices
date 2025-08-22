@@ -124,16 +124,16 @@ CREATE INDEX IF NOT EXISTS idx_prt_expires ON password_reset_tokens (expires_at)
 **SQL for creating the table:**
 
 ```sql
-CREATE TABLE IF NOT EXISTS urls (
+CREATE TABLE IF NOT EXISTS url (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
     original_url TEXT NOT NULL,
     short_code TEXT UNIQUE NOT NULL,
     title TEXT,
+    description TEXT,
     clicks INTEGER DEFAULT 0,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     alias TEXT UNIQUE NULL,
-    description TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_urls_user ON urls (user_id);
