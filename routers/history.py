@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from ..database import SessionLocal
+from database import SessionLocal
 
 router = APIRouter(
 	prefix="/history",

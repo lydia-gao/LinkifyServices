@@ -1,14 +1,16 @@
 from fastapi import APIRouter, HTTPException, status, Depends, Body, Response
-from pydantic import BaseModel, HttpUrl, Field, AnyUrl
+from pydantic import BaseModel, Field, AnyUrl
 from sqlalchemy.orm import Session
-from ..models import ShortUrl
-from ..database import SessionLocal
+from models import Url
+from database import SessionLocal
 import string
 from typing import Annotated, Optional
+from routers.auth import get_current_user
+from config import settings
 
 router = APIRouter(
-	prefix="/shorten",
-	tags=["shorturl"]
+	prefix="/url",
+	tags=["url"]
 )
 
 def get_db():
@@ -19,7 +21,8 @@ def get_db():
 		db.close()
 
 db_dependency = Annotated[Session, Depends(get_db)]
-# user_dependency = Annotated[dict, Depends(get_current_user)]
+
+user_dependency = Annotated[dict, Depends(get_current_user)]
 
 ALPHABET = string.digits + string.ascii_lowercase + string.ascii_uppercase
 BASE = 62
@@ -42,34 +45,56 @@ def from_base62(code: str) -> int:
 class ShortenRequest(BaseModel):
 	original_url: AnyUrl
 	alias: Optional[str] = Field(None, min_length=3, max_length=30, pattern="^[A-Za-z0-9_-]+$")
-	title: Optional[str] = Field(None, max_length=256)
-	description: Optional[str] = None 
+	title: str = Field(None, max_length=256)
+	description: Optional[str] = None
 
 class ShortenResponse(BaseModel):
 	original_url: str
 	short_code: str
 	alias: str = None
 	short_url: str
-	title: str = None
+	title: str
 	clicks: int
 	user_id: int = None
 	created_at: str
 
-@router.post("/", response_model=ShortenResponse, status_code=201)
-def create_short_url(
+@router.get("/", status_code=status.HTTP_200_OK)
+async def read_all(user: user_dependency, db: db_dependency):
+    if user is None:
+        raise HTTPException(status_code=401, detail='Authentication Failed')
+    return db.query(Url).filter(Url.user_id == user.get('id')).all()
+
+
+@router.post("/", status_code=status.HTTP_201_CREATED)
+async def create_short_url(
+	user: user_dependency,
 	req: ShortenRequest,
-	db: Session = Depends(get_db)
+	db: Session = Depends(get_db) 
 ):
-	# No auth required, mock response for testing
+	if user is None:
+		raise HTTPException(status_code=401, detail='Authentication Failed')
+
+	url_obj = Url(**req.model_dump(), user_id=user.get('id'), short_code="temp")
+
+	db.add(url_obj)
+	db.flush()
+
+	url_obj.short_code = to_base62(url_obj.id)
+
+	db.commit()
+	db.refresh(url_obj)
+
+	short_url = f"http://{settings.base_url}/{url_obj.short_code}"
+
 	return ShortenResponse(
-		original_url=str(req.target_url),
-		short_code="abc123",
-		alias=req.alias,
-		short_url=f"http://localhost:8000/{req.alias or 'abc123'}",
-		title="Example Website Homepage",
-		clicks=0,
-		user_id=1,
-		created_at="2025-05-15T14:30:00Z"
+		original_url=url_obj.original_url,
+		short_code=url_obj.short_code,
+		alias=url_obj.alias,
+		short_url=short_url,
+		title=url_obj.title,
+		clicks=url_obj.clicks,
+		user_id=url_obj.user_id,
+		created_at=url_obj.created_at.isoformat()
 	)
 
 # 2.2. Redirect from Short URL
