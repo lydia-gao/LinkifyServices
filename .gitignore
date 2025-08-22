@@ -215,3 +215,7 @@ __pycache__/
 .env
 notes.txt
 .vscode/
+check_env.py
+check_db_encoding.py
+test_db.py
+quick_connect.py
