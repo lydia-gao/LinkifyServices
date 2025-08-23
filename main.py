@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request, status
 from models import Base
 from database import engine
-from routers import analytics, barcode, history, qrcode, url
+from routers import analytics, barcode, qrcode, url
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 from starlette.middleware.sessions import SessionMiddleware

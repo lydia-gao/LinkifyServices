@@ -34,7 +34,7 @@ This document outlines the database schema for the SmartUrl service, which inclu
 | id               | SERIAL    | PRIMARY KEY      | Unique identifier for each user                                    |
 | username         | TEXT      | UNIQUE, NOT NULL | User's chosen username                                             |
 | email            | TEXT      | UNIQUE, NOT NULL | User's email address                                               |
-| password_hash    | TEXT      |                  | Hashed password (NULL for OAuth users)                             |
+| hashed_password    | TEXT      |                  | Hashed password (NULL for OAuth users)                             |
 | auth_provider    | TEXT      |                  | Authentication provider (NULL for local auth, "google" for Google) |
 | auth_provider_id | TEXT      |                  | Provider-specific user ID                                          |
 | created_at       | TIMESTAMP | NOT NULL         | When the user was created                                          |
@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     username TEXT UNIQUE NOT NULL,
     email TEXT UNIQUE NOT NULL,
-    password_hash TEXT,
+    hashed_password TEXT,
     auth_provider TEXT,
     auth_provider_id TEXT,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
