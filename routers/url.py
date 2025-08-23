@@ -27,7 +27,7 @@ db_dependency = Annotated[Session, Depends(get_db)]
 user_dependency = Annotated[dict, Depends(get_current_user)]
 
 
-AliasStr = Annotated[str, Field(min_length=3, max_length=30, pattern=r"^[A-Za-z0-9_-]+$")]
+AliasStr = Annotated[str, Field(min_length=1, max_length=30, pattern=r"^[A-Za-z0-9_-]+$")]
 
 class AliasRequest(BaseModel):
     alias: AliasStr
@@ -126,7 +126,7 @@ async def create_short_url(
 		raise HTTPException(status_code=409, detail="Unique constraint violation, please retry")
 	db.refresh(url_obj)
 
-	short_url = f"{settings.base_url}/{url_obj.short_code}"
+	short_url = f"{settings.base_url}/url/{url_obj.short_code}"
 
 	return ShortenResponse(
 		original_url=url_obj.original_url,
