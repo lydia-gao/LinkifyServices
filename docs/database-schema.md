@@ -34,7 +34,7 @@ This document outlines the database schema for the SmartUrl service, which inclu
 | id               | SERIAL    | PRIMARY KEY      | Unique identifier for each user                                    |
 | username         | TEXT      | UNIQUE, NOT NULL | User's chosen username                                             |
 | email            | TEXT      | UNIQUE, NOT NULL | User's email address                                               |
-| password_hash    | TEXT      |                  | Hashed password (NULL for OAuth users)                             |
+| hashed_password    | TEXT      |                  | Hashed password (NULL for OAuth users)                             |
 | auth_provider    | TEXT      |                  | Authentication provider (NULL for local auth, "google" for Google) |
 | auth_provider_id | TEXT      |                  | Provider-specific user ID                                          |
 | created_at       | TIMESTAMP | NOT NULL         | When the user was created                                          |
@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     username TEXT UNIQUE NOT NULL,
     email TEXT UNIQUE NOT NULL,
-    password_hash TEXT,
+    hashed_password TEXT,
     auth_provider TEXT,
     auth_provider_id TEXT,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -108,7 +108,9 @@ CREATE INDEX IF NOT EXISTS idx_prt_expires ON password_reset_tokens (expires_at)
 | user_id      | INTEGER   | FOREIGN KEY, NULL | ID of user who created this URL (NULL if user was deleted) |
 | original_url | TEXT      | NOT NULL          | The original long URL                                      |
 | short_code   | TEXT      | UNIQUE, NOT NULL  | The randomly generated code (e.g., "abc123")               |
+| alias        | TEXT      | UNIQUE, NULL      | An optional alias for the URL                              |
 | title        | TEXT      |                   | Title of the website (extracted from HTML)                 |
+| description  | TEXT      |                   | Description of the website         |
 | clicks       | INTEGER   | DEFAULT 0         | Number of times the short URL has been accessed            |
 | created_at   | TIMESTAMP | NOT NULL          | When the short URL was created                             |
 
@@ -122,14 +124,16 @@ CREATE INDEX IF NOT EXISTS idx_prt_expires ON password_reset_tokens (expires_at)
 **SQL for creating the table:**
 
 ```sql
-CREATE TABLE IF NOT EXISTS urls (
+CREATE TABLE IF NOT EXISTS url (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
     original_url TEXT NOT NULL,
     short_code TEXT UNIQUE NOT NULL,
     title TEXT,
+    description TEXT,
     clicks INTEGER DEFAULT 0,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    alias TEXT UNIQUE NULL,
 );
 
 CREATE INDEX IF NOT EXISTS idx_urls_user ON urls (user_id);

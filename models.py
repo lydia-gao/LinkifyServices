@@ -1,4 +1,4 @@
-from .database import Base
+from database import Base
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Text, DateTime, func
 from datetime import datetime
 
@@ -12,8 +12,8 @@ class Users(Base):
     last_name = Column(String) 
     hashed_password = Column(String) # encrypted password, not plain text
 
-class ShortUrl(Base):
-    __tablename__ = 'short_urls'
+class Url(Base):
+    __tablename__ = 'url'
     id = Column(Integer, primary_key=True, index=True)
     original_url = Column(Text, nullable=False)
     short_code = Column(String(16), unique=True, index=True, nullable=False)
@@ -22,3 +22,4 @@ class ShortUrl(Base):
     clicks = Column(Integer, default=0)
     user_id = Column(Integer, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    description = Column(Text, nullable=True)
