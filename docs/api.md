@@ -1,10 +1,10 @@
-# SmartUrl API Documentation
+# Linkify API Documentation
 
 ---
 
 ## Table of Contents
 
-- [SmartUrl API Documentation](#smarturl-api-documentation)
+- [Linkify API Documentation](#linkify-api-documentation)
   - [Table of Contents](#table-of-contents)
   - [Overview](#overview)
   - [API Endpoints](#api-endpoints)
@@ -12,13 +12,9 @@
       - [1.1. Register User (Username/Password)](#11-register-user-usernamepassword)
       - [1.2. Register with Google](#12-register-with-google)
       - [1.3. Login (Username/Password)](#13-login-usernamepassword)
-      - [1.4. Refresh Token](#14-refresh-token)
-      - [1.5. Logout (Client-side)](#15-logout-client-side)
-      - [1.6. Get User Profile](#16-get-user-profile)
-      - [1.7. Update User Profile](#17-update-user-profile)
-      - [1.8. Request Password Reset](#18-request-password-reset)
-      - [1.9. Confirm Password Reset](#19-confirm-password-reset)
-      - [1.10. Change Password (Logged-in User)](#110-change-password-logged-in-user)
+      - [1.4. Logout (Client-side)](#14-logout-client-side)
+      - [1.5. Get User Profile](#15-get-user-profile)
+      - [1.6. Update User Profile](#16-update-user-profile)
     - [2. Short URL Endpoints](#2-short-url-endpoints)
       - [2.1. Create Short URL](#21-create-short-url)
       - [2.2. Redirect from Short URL](#22-redirect-from-short-url)
@@ -49,9 +45,9 @@
 
 ## Overview
 
-This document outlines the API endpoints for the SmartUrl service. SmartUrl allows users to:
+This document outlines the API endpoints for the Linkify service. Linkify allows users to:
 
-1. **User Management (in the future)**
+1. **User Management (more features in the future)**
 
    1. Create user accounts (username/password or Google)
    2. Login and logout via JWT authentication
@@ -189,35 +185,7 @@ Each resource (URL, QR code, barcode) automatically extracts and stores the titl
 
 ---
 
-#### 1.4. Refresh Token
-
-**Purpose:** Get a new access token using a refresh token.
-
-**Endpoint:** `/auth/refresh`
-
-**Method:** `POST`
-
-**Request Body:**
-
-```json
-{
-  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-}
-```
-
-**Response:** (200 OK)
-
-```json
-{
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "token_type": "bearer",
-  "expires_in": 3600
-}
-```
-
----
-
-#### 1.5. Logout (Client-side)
+#### 1.4. Logout (Client-side)
 
 **Purpose:** Client removes tokens from storage. No server-side action required with pure JWT.
 
@@ -225,7 +193,7 @@ Each resource (URL, QR code, barcode) automatically extracts and stores the titl
 
 ---
 
-#### 1.6. Get User Profile
+#### 1.5. Get User Profile
 
 **Purpose:** Retrieve current user profile information.
 
@@ -255,7 +223,7 @@ Each resource (URL, QR code, barcode) automatically extracts and stores the titl
 
 ---
 
-#### 1.7. Update User Profile
+#### 1.6. Update User Profile
 
 **Purpose:** Update user profile information.
 
@@ -289,91 +257,6 @@ Each resource (URL, QR code, barcode) automatically extracts and stores the titl
 
 ---
 
-#### 1.8. Request Password Reset
-
-**Purpose:** Start a password-reset flow by sending a reset link to the user’s email.
-
-**Endpoint:** `/auth/password-reset/request`
-
-**Method:** `POST`
-
-**Request Body:**
-
-```json
-{
-  "email": "lydia@example.com",
-  "username": "lydiagao"
-}
-```
-
-**Response:** (200 OK)
-
-```json
-{
-  "message": "Password reset email sent."
-}
-```
-
----
-
-#### 1.9. Confirm Password Reset
-
-**Purpose:** Complete password reset using the token sent by email.
-
-**Endpoint:** `/auth/password-reset/confirm`
-
-**Method:** `POST`
-
-**Request Body:**
-
-```json
-{
-  "token": "abcdef1234567890",
-  "new_password": "NewP@ssw0rd!"
-}
-```
-
-**Response:** (200 OK)
-
-```json
-{
-  "message": "Password has been reset successfully."
-}
-```
-
----
-
-#### 1.10. Change Password (Logged-in User)
-
-**Purpose:** Allow a signed-in user to update their password.
-
-**Endpoint:** `/users/me/password`
-
-**Method:** `PATCH`
-
-**Headers:**
-
-- `Authorization: Bearer {access_token}`
-
-**Request Body:**
-
-```json
-{
-  "current_password": "OldP@ss1",
-  "new_password": "NewP@ssw0rd!"
-}
-```
-
-**Response:** (200 OK)
-
-```json
-{
-  "message": "Password changed successfully."
-}
-```
-
----
-
 ### 2. Short URL Endpoints
 
 #### 2.1. Create Short URL
@@ -392,14 +275,14 @@ Each resource (URL, QR code, barcode) automatically extracts and stores the titl
 
 ```json
 {
-  "target_url": "https://example.com/your/long/url",
+  "original_url": "https://example.com/your/long/url",
   "alias": "your-custom-alias" // optional: custom alias (3–30 chars, letters/numbers/_/-)
 }
 ```
 
 **Response:**
 
-- 400 Bad Request if `alias` or `target_url` is invalid.
+- 400 Bad Request if `alias` or `original_url` is invalid.
 - 409 Conflict if `alias` is already taken.
 - 201 Created:
 
@@ -532,7 +415,7 @@ Each resource (URL, QR code, barcode) automatically extracts and stores the titl
 
 ```json
 {
-  "target_url": "https://example.com/your/long/url"
+  "original_url": "https://example.com/your/long/url"
 }
 ```
 
@@ -606,7 +489,7 @@ Each resource (URL, QR code, barcode) automatically extracts and stores the titl
 
 ```json
 {
-  "target_url": "https://example.com/your/long/url"
+  "original_url": "https://example.com/your/long/url"
 }
 ```
 
@@ -1048,7 +931,7 @@ The application requires the following environment variables to be set:
 
 ## Website Title Extraction
 
-The SmartUrl service automatically extracts website titles when creating URLs, QR codes, and barcodes:
+The Linkify service automatically extracts website titles when creating URLs, QR codes, and barcodes:
 
 - When a user submits a URL, the system makes a request to the target website
 - The HTML is parsed to extract the `<title>` tag content
