@@ -5,8 +5,8 @@ from database import SessionLocal
 import string
 
 router = APIRouter(
-	prefix="/barcode",
-	tags=["barcode"]
+	prefix="/barcodes",
+	tags=["barcodes"]
 )
 
 def get_db():

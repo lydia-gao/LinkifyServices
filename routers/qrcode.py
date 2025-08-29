@@ -14,8 +14,8 @@ from utils.qrcode_utils import to_qr_code
 from utils.id_utils import generate_random_id
 
 router = APIRouter(
-	prefix="/qrcode",
-	tags=["qrcode"]
+	prefix="/qrcodes",
+	tags=["qrcodes"]
 )
 
 def get_db():

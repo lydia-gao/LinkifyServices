@@ -11,8 +11,8 @@ from config import settings
 from utils.encoding import to_base62
 
 router = APIRouter(
-	prefix="/shorturl",
-	tags=["shorturl"]
+	prefix="/shorturls",
+	tags=["shorturls"]
 )
 
 def get_db():
@@ -123,7 +123,7 @@ async def create_short_url(
 	)
 
 # 2.2. Redirect from Short URL
-@router.get("/{short_code}", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
+@router.get("/r/{short_code}", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
 async def redirect_short_url(short_code: str, user: user_dependency, db: db_dependency):
 	if user is None:
 		raise HTTPException(status_code=401, detail='Authentication Failed')
@@ -144,12 +144,12 @@ async def check_alias(payload: AliasRequest, db: db_dependency):
     alias = normalize_alias(payload.alias)
     return {"available": not shortpath_exists(alias, db)}
 
-@router.patch("/urls/{id}/alias")
-async def update_alias(id: int, payload: AliasRequest, db: db_dependency):
+@router.patch("/{short_code}/alias")
+async def update_alias(short_code: str, payload: AliasRequest, db: db_dependency):
     new_alias = normalize_alias(payload.alias)
     if shortpath_exists(new_alias, db):
         raise HTTPException(409, detail="Alias already taken")
-    obj = db.query(ShortUrl).filter(ShortUrl.id == id).first()
+    obj = db.query(ShortUrl).filter(ShortUrl.short_code == short_code).first()
     if not obj:
         raise HTTPException(status_code=404, detail="Short URL not found")
     obj.alias = new_alias
@@ -157,7 +157,7 @@ async def update_alias(id: int, payload: AliasRequest, db: db_dependency):
     return {"ok": True}
 
 # 2.4. Get Alias
-@router.get("/urls/{short_code}/alias")
+@router.get("/{short_code}/alias")
 async def get_alias(short_code: str, db: Session = Depends(get_db)):
 	obj = db.query(ShortUrl).filter(ShortUrl.short_code == short_code).first()
 	if not obj:
@@ -165,7 +165,7 @@ async def get_alias(short_code: str, db: Session = Depends(get_db)):
 	return {"short_code": obj.short_code, "alias": obj.alias}
 
 # 2.5. Remove Alias
-@router.delete("/urls/{short_code}/alias", status_code=204)
+@router.delete("/{short_code}/alias", status_code=204)
 async def remove_alias(short_code: str, db: Session = Depends(get_db)):
 	obj = db.query(ShortUrl).filter(ShortUrl.short_code == short_code).first()
 	if not obj:
