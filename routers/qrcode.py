@@ -1,4 +1,3 @@
-import qrcode
 from fastapi import APIRouter, HTTPException, status, Depends, Body, Response
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field, AnyUrl
@@ -12,6 +11,7 @@ from routers.auth import get_current_user
 from config import settings
 from io import BytesIO
 from utils.encoding import to_base62
+from utils.qrcode_utils import to_qr_code
 
 router = APIRouter(
 	prefix="/qrcode",
@@ -38,37 +38,13 @@ class QRCodeRequest(BaseModel):
 class QRCodeResponse(BaseModel):
 	original_url: str
 	qr_code_id: str
-	short_code: str
+	short_url: str
 	title: str = None
 	description: Optional[str] = None
 	scans: int
 	user_id: int = None
 	created_at: str
 
-
-def to_qr_code(original_url: str, file_path: str = "qrcode.png") -> str:
-	qr = qrcode.QRCode(
-		version=1,
-		error_correction=qrcode.constants.ERROR_CORRECT_L,
-		box_size=10,
-		border=4,
-	)
-	qr.add_data(original_url)
-	qr.make(fit=True)
-
-	img = qr.make_image(fill_color="black", back_color="white")
-	if file_path:
-		img.save(file_path)
-	# If file_path is a relative path (e.g., "qrcode.png"), the file is saved to the current working directory.
-	# If file_path is an absolute path (e.g., "/home/lydia/project/static/qrcode.png", start with "/"), the file is saved there directly.
-
-	else:
-		# if json request has file_path=None
-		buffer = BytesIO()
-		img.save(buffer, format="PNG")
-		buffer.seek(0)
-		return buffer
-	return file_path
 
 # 3.1. Generate QR Code
 @router.post("/", status_code=status.HTTP_201_CREATED)
@@ -85,15 +61,15 @@ def create_qrcode(
 		title=req.title,
 		description=req.description,
 		user_id=user.get("id"),
+		short_code="tmp"
 	)
 	db.add(qr_code)
-	db.commit()
-	db.refresh(qr_code)
+	db.flush()
 
 	return QRCodeResponse(
 		original_url=str(req.original_url),
 		qr_code_id=qr_code.id,
-		qr_code_url=f"http://localhost:8000/qrcode/{qr_code.id}",
+		short_code=f"http://localhost:8000/qrcode/{qr_code.id}",
 		title=req.title,
 		description=req.description,
 		scans=0,
