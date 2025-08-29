@@ -1,3 +1,4 @@
+import qrcode
 from fastapi import APIRouter, HTTPException, status, Depends, Body, Response
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field, AnyUrl
@@ -9,8 +10,8 @@ import string
 from typing import Annotated, Optional
 from routers.auth import get_current_user
 from config import settings
-import qrcode
 from io import BytesIO
+from utils.encoding import to_base62
 
 router = APIRouter(
 	prefix="/qrcode",
@@ -37,8 +38,9 @@ class QRCodeRequest(BaseModel):
 class QRCodeResponse(BaseModel):
 	original_url: str
 	qr_code_id: str
-	qr_code_url: str
+	short_code: str
 	title: str = None
+	description: Optional[str] = None
 	scans: int
 	user_id: int = None
 	created_at: str
@@ -69,17 +71,34 @@ def to_qr_code(original_url: str, file_path: str = "qrcode.png") -> str:
 	return file_path
 
 # 3.1. Generate QR Code
-@router.post("/", response_model=QRCodeResponse, status_code=201)
-def generate_qrcode(req: QRCodeRequest, db: Session = Depends(get_db)):
-	# No auth required, mock response for testing
+@router.post("/", status_code=status.HTTP_201_CREATED)
+def create_qrcode(
+	user: user_dependency,
+	req: QRCodeRequest,
+	db: Session = Depends(get_db) 
+):
+	if user is None:
+		raise HTTPException(status_code=401, detail='Authentication Failed')
+
+	qr_code = Url(
+		original_url=str(req.original_url),
+		title=req.title,
+		description=req.description,
+		user_id=user.get("id"),
+	)
+	db.add(qr_code)
+	db.commit()
+	db.refresh(qr_code)
+
 	return QRCodeResponse(
 		original_url=str(req.original_url),
-		qr_code_id="qr123",
-		qr_code_url="http://localhost:8000/qrcode/qr123",
-		title="Example Website Homepage",
+		qr_code_id=qr_code.id,
+		qr_code_url=f"http://localhost:8000/qrcode/{qr_code.id}",
+		title=req.title,
+		description=req.description,
 		scans=0,
-		user_id=1,
-		created_at="2025-05-15T14:30:00Z"
+		user_id=qr_code.user_id,
+		created_at=qr_code.created_at.isoformat()
 	)
 
 # 3.2. Get QR Code Image

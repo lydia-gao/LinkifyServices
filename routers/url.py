@@ -5,10 +5,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from models import Url
 from database import SessionLocal
-import string
 from typing import Annotated, Optional
 from routers.auth import get_current_user
 from config import settings
+from utils.encoding import to_base62
 
 router = APIRouter(
 	prefix="/url",
@@ -44,28 +44,10 @@ class ShortenResponse(BaseModel):
 	alias: Optional[str] = None
 	short_url: str
 	title: str
+	description: Optional[str] = None
 	clicks: int
 	user_id: int = None
 	created_at: str
-
-
-ALPHABET = string.digits + string.ascii_lowercase + string.ascii_uppercase
-BASE = 62
-
-def to_base62(num: int) -> str:
-    if num == 0:
-        return ALPHABET[0]
-    s = []
-    while num:
-        num, r = divmod(num, BASE)
-        s.append(ALPHABET[r])
-    return ''.join(reversed(s))
-
-def from_base62(code: str) -> int:
-    n = 0
-    for ch in code:
-        n = n * BASE + ALPHABET.index(ch)
-    return n
 
 # Alias
 
@@ -134,6 +116,7 @@ async def create_short_url(
 		alias=url_obj.alias,
 		short_url=short_url,
 		title=url_obj.title,
+		description=url_obj.description,
 		clicks=url_obj.clicks,
 		user_id=url_obj.user_id,
 		created_at=url_obj.created_at.isoformat()
