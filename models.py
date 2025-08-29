@@ -12,8 +12,8 @@ class Users(Base):
     last_name = Column(String) 
     hashed_password = Column(String) # encrypted password, not plain text
 
-class Url(Base):
-    __tablename__ = 'url'
+class ShortUrl(Base):
+    __tablename__ = 'short_urls'
     id = Column(Integer, primary_key=True, index=True)
     original_url = Column(Text, nullable=False)
     short_code = Column(String(16), unique=True, index=True, nullable=False)
@@ -25,7 +25,7 @@ class Url(Base):
     description = Column(Text, nullable=True)
 
 class Qrcode(Base):
-    __tablename__ = 'qrcode'
+    __tablename__ = 'qrcodes'
     id = Column(Integer, primary_key=True, index=True)
     original_url = Column(Text, nullable=False)
     qr_code_id = Column(String(16), unique=True, index=True, nullable=False)

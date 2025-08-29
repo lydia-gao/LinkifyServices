@@ -1,3 +1,4 @@
+import base64
 from fastapi import APIRouter, HTTPException, status, Depends, Body, Response
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field, AnyUrl
@@ -85,17 +86,19 @@ def create_qrcode(
 	qr_code_url = f"{settings.base_url}/qrcode/{qr_code.qr_code_id}"
 
 	qr_code_image = to_qr_code(original_url=qr_code_url, file_path=None)
+	qr_code_image_str = base64.b64encode(qr_code_image.getvalue()).decode("utf-8")
 
 	return QRCodeResponse(
 		original_url=str(req.original_url),
-		qr_code_id=qr_code.id,
-		qr_code_image=qr_code_image,
+		qr_code_id=qr_code.qr_code_id,
+		qr_code_image=qr_code_image_str,
 		title=req.title,
 		description=req.description,
 		scans=0,
 		user_id=qr_code.user_id,
 		created_at=qr_code.created_at.isoformat()
 	)
+
 
 # 3.2. Get QR Code Image
 @router.get("/{qr_code_id}/image")

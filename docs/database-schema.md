@@ -8,10 +8,10 @@
   - [Table of Contents](#table-of-contents)
   - [Overview](#overview)
   - [Database Tables](#database-tables)
-    - [Table: url](#table-url)
+    - [Table: short\_urls](#table-short_urls)
     - [Table: users](#table-users)
-    - [Table: qrcode](#table-qrcode)
-    - [Table: barcode](#table-barcode)
+    - [Table: qrcodes](#table-qrcodes)
+    - [Table: barcodes](#table-barcodes)
     - [Table: analytics](#table-analytics)
   - [Key Relationships](#key-relationships)
   - [Notes on Implementation](#notes-on-implementation)
@@ -20,14 +20,14 @@
 
 ## Overview
 
-This document outlines the database schema for the Linkify service, which includes tables for user management, URL shortening, QR code generation, barcode generation, and analytics tracking.
+This document outlines the database schema for the Linkify service, which includes tables for user management, URL shortening, QR code generation, barcodes generation, and analytics tracking.
 
 ---
 
 ## Database Tables
 ---
 
-### Table: url
+### Table: short_urls
 
 | Column       | Type      | Constraints       | Description                                                |
 | ------------ | --------- | ----------------- | ---------------------------------------------------------- |
@@ -51,7 +51,7 @@ This document outlines the database schema for the Linkify service, which includ
 **SQL for creating the table:**
 
 ```sql
-CREATE TABLE IF NOT EXISTS url (
+CREATE TABLE IF NOT EXISTS short_urls (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
     original_url TEXT NOT NULL,
@@ -60,11 +60,11 @@ CREATE TABLE IF NOT EXISTS url (
     description TEXT,
     clicks INTEGER DEFAULT 0,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    alias TEXT UNIQUE NULL,
+    alias TEXT UNIQUE NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_urls_user ON urls (user_id);
-CREATE INDEX IF NOT EXISTS idx_short_code ON urls (short_code);
+CREATE INDEX IF NOT EXISTS idx_urls_user ON short_urls (user_id);
+CREATE INDEX IF NOT EXISTS idx_short_code ON short_urls (short_code);
 ```
 ---
 
@@ -107,7 +107,7 @@ CREATE INDEX IF NOT EXISTS idx_auth_provider ON users (auth_provider, auth_provi
 
 ---
 
-### Table: qrcode
+### Table: qrcodes
 
 | Column       | Type      | Constraints       | Description                                                    |
 | ------------ | --------- | ----------------- | -------------------------------------------------------------- |
@@ -147,25 +147,25 @@ CREATE INDEX IF NOT EXISTS idx_qr_code_id ON qrcodes (qr_code_id);
 
 ---
 
-### Table: barcode
+### Table: barcodes
 
 | Column       | Type      | Constraints       | Description                                                    |
 | ------------ | --------- | ----------------- | -------------------------------------------------------------- |
-| id           | SERIAL    | PRIMARY KEY       | Unique identifier for each barcode entry                       |
-| user_id      | INTEGER   | FOREIGN KEY, NULL | ID of user who created this barcode (NULL if user was deleted) |
-| original_url | TEXT      | NOT NULL          | The original URL encoded in the barcode                        |
-| barcode_id   | TEXT      | UNIQUE, NOT NULL  | The unique identifier for the barcode                          |
+| id           | SERIAL    | PRIMARY KEY       | Unique identifier for each barcodes entry                       |
+| user_id      | INTEGER   | FOREIGN KEY, NULL | ID of user who created this barcodes (NULL if user was deleted) |
+| original_url | TEXT      | NOT NULL          | The original URL encoded in the barcodes                        |
+| barcodes_id   | TEXT      | UNIQUE, NOT NULL  | The unique identifier for the barcodes                          |
 | title        | TEXT      |                   | Title of the website (extracted from HTML)                     |
 | description  | TEXT      |                   | Description of the website                                       |
-| scans        | INTEGER   | DEFAULT 0         | Number of times the barcode has been scanned                   |
-| created_at   | TIMESTAMP | NOT NULL          | When the barcode was created                                   |
+| scans        | INTEGER   | DEFAULT 0         | Number of times the barcodes has been scanned                   |
+| created_at   | TIMESTAMP | NOT NULL          | When the barcodes was created                                   |
 
 **Indexes:**
 
 - PRIMARY KEY on `id` (automatically created)
-- UNIQUE INDEX on `barcode_id` (automatically created by UNIQUE constraint)
+- UNIQUE INDEX on `barcodes_id` (automatically created by UNIQUE constraint)
 - INDEX on `user_id` for user's barcodes lookup
-- INDEX on `barcode_id` for faster lookups
+- INDEX on `barcodes_id` for faster lookups
 
 **SQL for creating the table:**
 
@@ -174,7 +174,7 @@ CREATE TABLE IF NOT EXISTS barcodes (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
     original_url TEXT NOT NULL,
-    barcode_id TEXT UNIQUE NOT NULL,
+    barcodes_id TEXT UNIQUE NOT NULL,
     title TEXT,
     description TEXT,
     scans INTEGER DEFAULT 0,
@@ -182,7 +182,7 @@ CREATE TABLE IF NOT EXISTS barcodes (
 );
 
 CREATE INDEX IF NOT EXISTS idx_barcodes_user ON barcodes (user_id);
-CREATE INDEX IF NOT EXISTS idx_barcode_id ON barcodes (barcode_id);
+CREATE INDEX IF NOT EXISTS idx_barcodes_id ON barcodes (barcodes_id);
 ```
 
 ---
@@ -192,8 +192,8 @@ CREATE INDEX IF NOT EXISTS idx_barcode_id ON barcodes (barcode_id);
 | Column        | Type      | Constraints | Description                                                |
 | ------------- | --------- | ----------- | ---------------------------------------------------------- |
 | id            | SERIAL    | PRIMARY KEY | Unique identifier for each analytics entry                 |
-| resource_type | TEXT      | NOT NULL    | Type of resource ("url", "qrcode", or "barcode")           |
-| resource_id   | TEXT      | NOT NULL    | ID of the resource (short_code, qr_code_id, or barcode_id) |
+| resource_type | TEXT      | NOT NULL    | Type of resource ("urls", "qrcodes", or "barcodes")           |
+| resource_id   | TEXT      | NOT NULL    | ID of the resource (short_code, qr_code_id, or barcodes_id) |
 | event_type    | TEXT      | NOT NULL    | Type of event ("click" or "scan")                          |
 | event_date    | TIMESTAMP | NOT NULL    | Date and time of the event                                 |
 | referrer      | TEXT      |             | Source of the visit (for URLs)                             |
@@ -254,7 +254,7 @@ CREATE INDEX IF NOT EXISTS idx_country ON analytics (country);
 **Relationship 2: Resource-to-Analytics**
 
 - Type: One-to-Many relationship
-- Description: Each resource (URL, QR code, barcode) can have multiple analytics entries
+- Description: Each resource (URL, QR code, barcodes) can have multiple analytics entries
 - Implementation: Through `resource_type` and `resource_id` fields in the analytics table
 - Event tracking: Each row in the analytics table represents a single interaction event (one click or scan)
 - Data captured: The analytics table stores detailed information about each interaction with a resource
@@ -266,7 +266,7 @@ CREATE INDEX IF NOT EXISTS idx_country ON analytics (country);
 
 1. **QR Codes and Barcodes Generation**
 
-   - The actual QR code and barcode images are generated on-demand
+   - The actual QR code and barcodes images are generated on-demand
    - No image data is stored in the database, only the metadata
    - Images are created when requested through the image endpoints
 
