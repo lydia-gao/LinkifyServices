@@ -136,7 +136,9 @@ CREATE TABLE IF NOT EXISTS qrcodes (
     user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
     original_url TEXT NOT NULL,
     qr_code_id TEXT UNIQUE NOT NULL,
+    qr_code_url TEXT NOT NULL,
     title TEXT,
+    description TEXT,
     scans INTEGER DEFAULT 0,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -176,6 +178,7 @@ CREATE TABLE IF NOT EXISTS barcodes (
     original_url TEXT NOT NULL,
     barcode_id TEXT UNIQUE NOT NULL,
     title TEXT,
+    description TEXT,
     scans INTEGER DEFAULT 0,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
