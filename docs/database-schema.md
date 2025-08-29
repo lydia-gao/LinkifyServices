@@ -8,10 +8,10 @@
   - [Table of Contents](#table-of-contents)
   - [Overview](#overview)
   - [Database Tables](#database-tables)
-    - [Table: urls](#table-urls)
+    - [Table: url](#table-url)
     - [Table: users](#table-users)
-    - [Table: qrcodes](#table-qrcodes)
-    - [Table: barcodes](#table-barcodes)
+    - [Table: qrcode](#table-qrcode)
+    - [Table: barcode](#table-barcode)
     - [Table: analytics](#table-analytics)
   - [Key Relationships](#key-relationships)
   - [Notes on Implementation](#notes-on-implementation)
@@ -27,7 +27,7 @@ This document outlines the database schema for the Linkify service, which includ
 ## Database Tables
 ---
 
-### Table: urls
+### Table: url
 
 | Column       | Type      | Constraints       | Description                                                |
 | ------------ | --------- | ----------------- | ---------------------------------------------------------- |
@@ -107,15 +107,14 @@ CREATE INDEX IF NOT EXISTS idx_auth_provider ON users (auth_provider, auth_provi
 
 ---
 
-### Table: qrcodes
+### Table: qrcode
 
 | Column       | Type      | Constraints       | Description                                                    |
 | ------------ | --------- | ----------------- | -------------------------------------------------------------- |
 | id           | SERIAL    | PRIMARY KEY       | Unique identifier for each QR code entry                       |
 | user_id      | INTEGER   | FOREIGN KEY, NULL | ID of user who created this QR code (NULL if user was deleted) |
 | original_url | TEXT      | NOT NULL          | The original URL encoded in the QR code                        |
-| qr_code_id   | TEXT      | UNIQUE, NOT NULL  | The unique identifier for the QR code                          |
-| qr_code_url  | TEXT      | NOT NULL          | The URL encoded in the QR code itself                          |
+| qr_code_id   | TEXT      | UNIQUE, NOT NULL  | The unique identifier for the QR code                          |                  |
 | title        | TEXT      |                   | Title of the website (extracted from HTML)                     |
 | description  | TEXT      |                   | Description of the website                                       |
 | scans        | INTEGER   | DEFAULT 0         | Number of times the QR code has been scanned                   |
@@ -136,7 +135,6 @@ CREATE TABLE IF NOT EXISTS qrcodes (
     user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
     original_url TEXT NOT NULL,
     qr_code_id TEXT UNIQUE NOT NULL,
-    qr_code_url TEXT NOT NULL,
     title TEXT,
     description TEXT,
     scans INTEGER DEFAULT 0,
@@ -149,7 +147,7 @@ CREATE INDEX IF NOT EXISTS idx_qr_code_id ON qrcodes (qr_code_id);
 
 ---
 
-### Table: barcodes
+### Table: barcode
 
 | Column       | Type      | Constraints       | Description                                                    |
 | ------------ | --------- | ----------------- | -------------------------------------------------------------- |
