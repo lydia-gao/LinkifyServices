@@ -4,12 +4,12 @@ from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field, AnyUrl
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from models import Barcode   # 需要在 models.py 里定义 Barcode 表
+from models import Barcode
 from database import SessionLocal
 from typing import Annotated, Optional
 from routers.auth import get_current_user
 from config import settings
-from utils.barcode_utils import to_barcode  # 你需要实现和 to_qr_code 类似的工具函数
+from utils.barcode_utils import to_barcode
 from utils.random_id import generate_random_id
 from utils.redirect_utils import redirect_to_original
 
@@ -70,7 +70,6 @@ async def create_barcode(
     if user is None:
         raise HTTPException(status_code=401, detail='Authentication Failed')
 
-    # 尝试生成唯一 barcode_id
     for _ in range(5):
         barcode_id = generate_random_id(10)
         barcode = Barcode(
@@ -91,7 +90,6 @@ async def create_barcode(
     else:
         raise HTTPException(status_code=409, detail="Failed to generate unique barcode_id after retries")
 
-    # 生成条码图片 (base64)
     barcode_url = f"{settings.base_url}/barcodes/{barcode.barcode_id}"
     barcode_image = to_barcode(original_url=barcode_url, file_path=None)
     barcode_image_str = base64.b64encode(barcode_image.getvalue()).decode("utf-8")
