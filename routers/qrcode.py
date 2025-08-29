@@ -11,7 +11,8 @@ from typing import Annotated, Optional
 from routers.auth import get_current_user
 from config import settings
 from utils.qrcode_utils import to_qr_code
-from utils.id_utils import generate_random_id
+from utils.random_id import generate_random_id
+from utils.redirect_utils import redirect_to_original
 
 router = APIRouter(
 	prefix="/qrcodes",
@@ -54,7 +55,7 @@ async def read_all(user: user_dependency, db: db_dependency):
 
 # 3.1. Generate QR Code
 @router.post("/", status_code=status.HTTP_201_CREATED)
-def create_qrcode(
+async def create_qrcode(
 	user: user_dependency,
 	req: QRCodeRequest,
 	db: Session = Depends(get_db) 
@@ -102,13 +103,26 @@ def create_qrcode(
 
 # 3.2. Get QR Code Image
 @router.get("/{qr_code_id}/image")
-def get_qrcode_image(qr_code_id: str, db: Session = Depends(get_db)):
-	# No auth required, mock response for testing
-	return Response(content=b"PNGDATA", media_type="image/png")
+async def get_qrcode_image(qr_code_id: str, db: db_dependency):
+    obj = db.query(Qrcode).filter(Qrcode.qr_code_id == qr_code_id).first()
+    if not obj:
+        raise HTTPException(status_code=404, detail="QR Code not found")
+
+	# buffer is an in-memory bytes container/memory space (in RAM). 
+	# Python exposes it as a file-like object, so we can use file operations (read, write, seek) without touching disk.
+
+    buffer = to_qr_code(
+        original_url=f"{settings.base_url}/qrcode/{obj.qr_code_id}", 
+        file_path=None
+    )
+    return Response(content=buffer.getvalue(), media_type="image/png")
+
 
 # 3.3. Redirect from QR Code
-from fastapi.responses import RedirectResponse
-@router.get("/{qr_code_id}", status_code=307)
-def redirect_from_qrcode(qr_code_id: str, db: Session = Depends(get_db)):
-	# No auth required, mock redirect for testing
-	return RedirectResponse(url="https://example.com/your/long/url", status_code=307)
+@router.get("/{qr_code_id}", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
+async def redirect_from_qrcode(qr_code_id: str, db: db_dependency):
+    obj = db.query(Qrcode).filter(Qrcode.qr_code_id == qr_code_id).first()
+    if obj:
+        obj.scans += 1
+        db.commit()
+    return redirect_to_original(obj)
