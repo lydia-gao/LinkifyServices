@@ -1,16 +1,15 @@
-# SmartUrl Database Schema
+# Linkify Database Schema
 
 ---
 
 ## Table of Contents
 
-- [SmartUrl Database Schema](#smarturl-database-schema)
+- [Linkify Database Schema](#linkify-database-schema)
   - [Table of Contents](#table-of-contents)
   - [Overview](#overview)
   - [Database Tables](#database-tables)
+    - [Table: short\_urls](#table-short_urls)
     - [Table: users](#table-users)
-    - [Table: password\_reset\_tokens (in the future)](#table-password_reset_tokens-in-the-future)
-    - [Table: urls](#table-urls)
     - [Table: qrcodes](#table-qrcodes)
     - [Table: barcodes](#table-barcodes)
     - [Table: analytics](#table-analytics)
@@ -21,11 +20,55 @@
 
 ## Overview
 
-This document outlines the database schema for the SmartUrl service, which includes tables for user management, URL shortening, QR code generation, barcode generation, and analytics tracking.
+This document outlines the database schema for the Linkify service, which includes tables for user management, URL shortening, QR code generation, barcodes generation, and analytics tracking.
 
 ---
 
 ## Database Tables
+
+---
+
+### Table: short_urls
+
+| Column       | Type      | Constraints       | Description                                                |
+| ------------ | --------- | ----------------- | ---------------------------------------------------------- |
+| id           | SERIAL    | PRIMARY KEY       | Unique identifier for each URL entry                       |
+| user_id      | INTEGER   | FOREIGN KEY, NULL | ID of user who created this URL (NULL if user was deleted) |
+| original_url | TEXT      | NOT NULL          | The original long URL                                      |
+| short_code   | TEXT      | UNIQUE, NOT NULL  | The randomly generated code (e.g., "abc123")               |
+| alias        | TEXT      | UNIQUE, NULL      | An optional alias for the URL                              |
+| title        | TEXT      |                   | Title of the website (extracted from HTML)                 |
+| description  | TEXT      |                   | Description of the website                                 |
+| clicks       | INTEGER   | DEFAULT 0         | Number of times the short URL has been accessed            |
+| created_at   | TIMESTAMP | NOT NULL          | When the short URL was created                             |
+
+**Indexes:**
+
+- PRIMARY KEY on `id` (automatically created)
+- UNIQUE INDEX on `short_code` (automatically created by UNIQUE constraint)
+- INDEX on `user_id` for user's URLs lookup
+- INDEX on `short_code` for faster lookups
+
+**SQL for creating the table:**
+
+```sql
+CREATE TABLE IF NOT EXISTS short_urls (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    original_url TEXT NOT NULL,
+    short_code TEXT UNIQUE NOT NULL,
+    title TEXT,
+    description TEXT,
+    clicks INTEGER DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    alias TEXT UNIQUE
+);
+
+CREATE INDEX IF NOT EXISTS idx_short_urls_user ON short_urls (user_id);
+CREATE INDEX IF NOT EXISTS idx_short_urls_code ON short_urls (short_code);
+```
+
+---
 
 ### Table: users
 
@@ -34,11 +77,11 @@ This document outlines the database schema for the SmartUrl service, which inclu
 | id               | SERIAL    | PRIMARY KEY      | Unique identifier for each user                                    |
 | username         | TEXT      | UNIQUE, NOT NULL | User's chosen username                                             |
 | email            | TEXT      | UNIQUE, NOT NULL | User's email address                                               |
-| hashed_password    | TEXT      |                  | Hashed password (NULL for OAuth users)                             |
+| hashed_password  | TEXT      |                  | Hashed password (NULL for OAuth users)                             |
 | auth_provider    | TEXT      |                  | Authentication provider (NULL for local auth, "google" for Google) |
 | auth_provider_id | TEXT      |                  | Provider-specific user ID                                          |
-| created_at       | TIMESTAMP | NOT NULL         | When the user was created                                          |
-| updated_at       | TIMESTAMP | NOT NULL         | When the user was last updated                                     |
+| created_at       | TIMESTAMP | NOT NULL         | When the user was created                                         |
+
 
 **Indexes:**
 
@@ -57,8 +100,7 @@ CREATE TABLE IF NOT EXISTS users (
     hashed_password TEXT,
     auth_provider TEXT,
     auth_provider_id TEXT,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_auth_provider ON users (auth_provider, auth_provider_id);
@@ -66,91 +108,16 @@ CREATE INDEX IF NOT EXISTS idx_auth_provider ON users (auth_provider, auth_provi
 
 ---
 
-### Table: password_reset_tokens (in the future)
-
-| Column     | Type      | Constraints                                     | Description                                   |
-| ---------- | --------- | ----------------------------------------------- | --------------------------------------------- |
-| id         | SERIAL    | PRIMARY KEY                                   | Unique identifier for each reset token record |
-| user_id    | INTEGER   | NOT NULL REFERENCES users(id) ON DELETE CASCADE | User requesting the reset                     |
-| token      | TEXT      | NOT NULL UNIQUE                                 | Secure random token                           |
-| expires_at | TIMESTAMP | NOT NULL                                        | Expiration timestamp for this token           |
-| used       | BOOLEAN   | NOT NULL DEFAULT FALSE                          | Whether the token has been used               |
-| created_at | TIMESTAMP | NOT NULL DEFAULT CURRENT_TIMESTAMP              | When the token record was created             |
-
-**Indexes:**
-
-- INDEX on `user_id`
-- INDEX on `expires_at`
-
-**SQL for creating the table:**
-
-```sql
-CREATE TABLE IF NOT EXISTS password_reset_tokens (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    token TEXT NOT NULL UNIQUE,
-    expires_at TIMESTAMP NOT NULL,
-    used BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_prt_user ON password_reset_tokens (user_id);
-CREATE INDEX IF NOT EXISTS idx_prt_expires ON password_reset_tokens (expires_at);
-```
-
----
-
-### Table: urls
-
-| Column       | Type      | Constraints       | Description                                                |
-| ------------ | --------- | ----------------- | ---------------------------------------------------------- |
-| id           | SERIAL    | PRIMARY KEY       | Unique identifier for each URL entry                       |
-| user_id      | INTEGER   | FOREIGN KEY, NULL | ID of user who created this URL (NULL if user was deleted) |
-| original_url | TEXT      | NOT NULL          | The original long URL                                      |
-| short_code   | TEXT      | UNIQUE, NOT NULL  | The randomly generated code (e.g., "abc123")               |
-| alias        | TEXT      | UNIQUE, NULL      | An optional alias for the URL                              |
-| title        | TEXT      |                   | Title of the website (extracted from HTML)                 |
-| description  | TEXT      |                   | Description of the website         |
-| clicks       | INTEGER   | DEFAULT 0         | Number of times the short URL has been accessed            |
-| created_at   | TIMESTAMP | NOT NULL          | When the short URL was created                             |
-
-**Indexes:**
-
-- PRIMARY KEY on `id` (automatically created)
-- UNIQUE INDEX on `short_code` (automatically created by UNIQUE constraint)
-- INDEX on `user_id` for user's URLs lookup
-- INDEX on `short_code` for faster lookups
-
-**SQL for creating the table:**
-
-```sql
-CREATE TABLE IF NOT EXISTS url (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
-    original_url TEXT NOT NULL,
-    short_code TEXT UNIQUE NOT NULL,
-    title TEXT,
-    description TEXT,
-    clicks INTEGER DEFAULT 0,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    alias TEXT UNIQUE NULL,
-);
-
-CREATE INDEX IF NOT EXISTS idx_urls_user ON urls (user_id);
-CREATE INDEX IF NOT EXISTS idx_short_code ON urls (short_code);
-```
-
----
-
 ### Table: qrcodes
 
 | Column       | Type      | Constraints       | Description                                                    |
-| ------------ | --------- | ----------------- | -------------------------------------------------------------- |
+| ------------ | --------- | ----------------- | -------------------------------------------------------------- | --- |
 | id           | SERIAL    | PRIMARY KEY       | Unique identifier for each QR code entry                       |
 | user_id      | INTEGER   | FOREIGN KEY, NULL | ID of user who created this QR code (NULL if user was deleted) |
 | original_url | TEXT      | NOT NULL          | The original URL encoded in the QR code                        |
-| qr_code_id   | TEXT      | UNIQUE, NOT NULL  | The unique identifier for the QR code                          |
+| qr_code_id   | TEXT      | UNIQUE, NOT NULL  | The unique identifier for the QR code                          |     |
 | title        | TEXT      |                   | Title of the website (extracted from HTML)                     |
+| description  | TEXT      |                   | Description of the website                                     |
 | scans        | INTEGER   | DEFAULT 0         | Number of times the QR code has been scanned                   |
 | created_at   | TIMESTAMP | NOT NULL          | When the QR code was created                                   |
 
@@ -170,6 +137,7 @@ CREATE TABLE IF NOT EXISTS qrcodes (
     original_url TEXT NOT NULL,
     qr_code_id TEXT UNIQUE NOT NULL,
     title TEXT,
+    description TEXT,
     scans INTEGER DEFAULT 0,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -182,15 +150,16 @@ CREATE INDEX IF NOT EXISTS idx_qr_code_id ON qrcodes (qr_code_id);
 
 ### Table: barcodes
 
-| Column       | Type      | Constraints       | Description                                                    |
-| ------------ | --------- | ----------------- | -------------------------------------------------------------- |
-| id           | SERIAL    | PRIMARY KEY       | Unique identifier for each barcode entry                       |
-| user_id      | INTEGER   | FOREIGN KEY, NULL | ID of user who created this barcode (NULL if user was deleted) |
-| original_url | TEXT      | NOT NULL          | The original URL encoded in the barcode                        |
-| barcode_id   | TEXT      | UNIQUE, NOT NULL  | The unique identifier for the barcode                          |
-| title        | TEXT      |                   | Title of the website (extracted from HTML)                     |
-| scans        | INTEGER   | DEFAULT 0         | Number of times the barcode has been scanned                   |
-| created_at   | TIMESTAMP | NOT NULL          | When the barcode was created                                   |
+| Column       | Type      | Constraints       | Description                                                     |
+| ------------ | --------- | ----------------- | --------------------------------------------------------------- |
+| id           | SERIAL    | PRIMARY KEY       | Unique identifier for each barcodes entry                       |
+| user_id      | INTEGER   | FOREIGN KEY, NULL | ID of user who created this barcodes (NULL if user was deleted) |
+| original_url | TEXT      | NOT NULL          | The original URL encoded in the barcodes                        |
+| barcode_id   | TEXT      | UNIQUE, NOT NULL  | The unique identifier for the barcode                           |
+| title        | TEXT      |                   | Title of the website (extracted from HTML)                      |
+| description  | TEXT      |                   | Description of the website                                      |
+| scans        | INTEGER   | DEFAULT 0         | Number of times the barcodes has been scanned                   |
+| created_at   | TIMESTAMP | NOT NULL          | When the barcodes was created                                   |
 
 **Indexes:**
 
@@ -208,6 +177,7 @@ CREATE TABLE IF NOT EXISTS barcodes (
     original_url TEXT NOT NULL,
     barcode_id TEXT UNIQUE NOT NULL,
     title TEXT,
+    description TEXT,
     scans INTEGER DEFAULT 0,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -223,7 +193,7 @@ CREATE INDEX IF NOT EXISTS idx_barcode_id ON barcodes (barcode_id);
 | Column        | Type      | Constraints | Description                                                |
 | ------------- | --------- | ----------- | ---------------------------------------------------------- |
 | id            | SERIAL    | PRIMARY KEY | Unique identifier for each analytics entry                 |
-| resource_type | TEXT      | NOT NULL    | Type of resource ("url", "qrcode", or "barcode")           |
+| resource_type | TEXT      | NOT NULL    | Type of resource ("short_urls", "qrcodes", or "barcodes")  |
 | resource_id   | TEXT      | NOT NULL    | ID of the resource (short_code, qr_code_id, or barcode_id) |
 | event_type    | TEXT      | NOT NULL    | Type of event ("click" or "scan")                          |
 | event_date    | TIMESTAMP | NOT NULL    | Date and time of the event                                 |
@@ -276,27 +246,19 @@ CREATE INDEX IF NOT EXISTS idx_country ON analytics (country);
 **Relationship 1: User-to-Resource**
 
 - Type: One-to-Many relationship
-- Description: A single user can create multiple resources (URLs, QR codes, barcodes)
+- Description: A single user can create multiple resources (short URLs, QR codes, barcodes)
 - Implementation: Through `user_id` foreign key in resource tables
 - Creation requirement: All resources must be created by authenticated users (enforced at application level)
 - Deletion behavior: When a user is deleted, resources remain but user association is removed (SET NULL)
-- Resource persistence: All URLs, QR codes, and barcodes continue to function normally even after the creating user is deleted
+- Resource persistence: All short URLs, QR codes, and barcodes continue to function normally even after the creating user is deleted
 
 **Relationship 2: Resource-to-Analytics**
 
 - Type: One-to-Many relationship
-- Description: Each resource (URL, QR code, barcode) can have multiple analytics entries
+- Description: Each resource (short URL, QR code, barcode) can have multiple analytics entries
 - Implementation: Through `resource_type` and `resource_id` fields in the analytics table
 - Event tracking: Each row in the analytics table represents a single interaction event (one click or scan)
 - Data captured: The analytics table stores detailed information about each interaction with a resource
-
-**Relationship 3: User-to-PasswordResetTokens**
-
-- Type: One-to-Many relationship
-- Description: A single user may request multiple password reset tokens
-- Implementation: Through `user_id` foreign key in `password_reset_tokens` table
-- Token lifecycle: Each token record tracks creation time (`created_at`), expiry (`expires_at`), and usage status (`used`)
-- Deletion behavior: When a user is deleted, all their related password reset tokens are also removed (ON DELETE CASCADE)
 
 ---
 
@@ -331,14 +293,3 @@ CREATE INDEX IF NOT EXISTS idx_country ON analytics (country);
    - Indexes are used to improve query performance, especially for lookups and analytics
    - Compound indexes like `idx_resource` optimize common query patterns
    - Each analytics event (click or scan) is stored as a separate row for detailed analysis
-
-6. **Password Management Flows**
-
-   - **Forgot Password (Not Logged In):**
-
-     - Generate a secure `token` in `password_reset_tokens`, email a reset link containing this token
-     - On confirmation, verify `token`, `expires_at > now()`, and `used = false`, then update password and set `used = true`
-
-   - **Change Password (Logged In):**
-
-     - Users provide `current_password` and `new_password` via `/users/me/password`, then password is updated immediately without email verification
