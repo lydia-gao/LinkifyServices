@@ -3,13 +3,13 @@ from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field, AnyUrl
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from models import ShortUrl
-from database import SessionLocal
+from app.models.models import ShortUrl
+from app.database.database import SessionLocal
 from typing import Annotated, Optional
-from routers.auth import get_current_user
-from config import settings
-from utils.encoding_base62 import to_base62
-from utils.redirect_utils import redirect_to_original
+from app.api.auth import get_current_user
+from app.core.config import settings
+from app.utils.encoding_base62 import to_base62
+from app.utils.redirect_utils import redirect_to_original
 
 router = APIRouter(
 	prefix="/shorturls",

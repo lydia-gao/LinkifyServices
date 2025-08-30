@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import AnyUrl
-from utils.metadata_utils import fetch_url_metadata
+from app.utils.metadata_utils import fetch_url_metadata
 
 router = APIRouter(
     prefix="/metadata",

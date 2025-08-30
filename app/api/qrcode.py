@@ -4,15 +4,15 @@ from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field, AnyUrl
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from models import Qrcode
-from database import SessionLocal
+from app.models.models import Qrcode
+from app.database.database import SessionLocal
 import string
 from typing import Annotated, Optional
-from routers.auth import get_current_user
-from config import settings
-from utils.qrcode_utils import to_qr_code
-from utils.random_id import generate_random_id
-from utils.redirect_utils import redirect_to_original
+from app.api.auth import get_current_user
+from app.core.config import settings
+from app.utils.qrcode_utils import to_qr_code
+from app.utils.random_id import generate_random_id
+from app.utils.redirect_utils import redirect_to_original
 
 router = APIRouter(
 	prefix="/qrcodes",

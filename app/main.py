@@ -1,11 +1,11 @@
 from fastapi import FastAPI, Request, status
-from models import Base
-from database import engine
-from routers import analytics, barcode, qrcode, shorturl, metadata, auth, users
+from app.models.models import Base
+from app.database.database import engine
+from app.api import analytics, barcode, qrcode, shorturl, metadata, auth, users
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 from starlette.middleware.sessions import SessionMiddleware
-from config import settings
+from app.core.config import settings
 
 app = FastAPI()
 

@@ -4,14 +4,14 @@ from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field, AnyUrl
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from models import Barcode
-from database import SessionLocal
+from app.models.models import Barcode
+from app.database.database import SessionLocal
 from typing import Annotated, Optional
-from routers.auth import get_current_user
-from config import settings
-from utils.barcode_utils import to_barcode
-from utils.random_id import generate_random_id
-from utils.redirect_utils import redirect_to_original
+from app.api.auth import get_current_user
+from app.core.config import settings
+from app.utils.barcode_utils import to_barcode
+from app.utils.random_id import generate_random_id
+from app.utils.redirect_utils import redirect_to_original
 
 
 router = APIRouter(
