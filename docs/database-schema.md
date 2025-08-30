@@ -80,8 +80,8 @@ CREATE INDEX IF NOT EXISTS idx_short_urls_code ON short_urls (short_code);
 | hashed_password  | TEXT      |                  | Hashed password (NULL for OAuth users)                             |
 | auth_provider    | TEXT      |                  | Authentication provider (NULL for local auth, "google" for Google) |
 | auth_provider_id | TEXT      |                  | Provider-specific user ID                                          |
-| created_at       | TIMESTAMP | NOT NULL         | When the user was created                                          |
-| updated_at       | TIMESTAMP | NOT NULL         | When the user was last updated                                     |
+| created_at       | TIMESTAMP | NOT NULL         | When the user was created                                         |
+
 
 **Indexes:**
 
@@ -100,8 +100,7 @@ CREATE TABLE IF NOT EXISTS users (
     hashed_password TEXT,
     auth_provider TEXT,
     auth_provider_id TEXT,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_auth_provider ON users (auth_provider, auth_provider_id);
