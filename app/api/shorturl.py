@@ -18,16 +18,9 @@ router = APIRouter(
 	tags=["shorturls"]
 )
 
-def get_db():
-	db = SessionLocal()
-	try:
-		yield db
-	finally:
-		db.close()
 
-db_dependency = Annotated[Session, Depends(get_db)]
-
-user_dependency = Annotated[dict, Depends(get_current_user)]
+# Use shared dependencies
+from app.database.dependencies import db_dependency, user_dependency
 
 
 from app.schemas.shorturl import AliasRequest, ShortenRequest, ShortenResponse
