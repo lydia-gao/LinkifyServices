@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status, Depends, Body, Response
 from fastapi.responses import RedirectResponse
-from pydantic import BaseModel, Field, AnyUrl
+from pydantic import Field, AnyUrl
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from app.models.models import ShortUrl
@@ -28,27 +28,7 @@ db_dependency = Annotated[Session, Depends(get_db)]
 user_dependency = Annotated[dict, Depends(get_current_user)]
 
 
-AliasStr = Annotated[str, Field(min_length=1, max_length=30, pattern=r"^[A-Za-z0-9_-]+$")]
-
-class AliasRequest(BaseModel):
-    alias: AliasStr
-
-class ShortenRequest(BaseModel):
-	original_url: AnyUrl
-	alias: Optional[AliasStr] = None
-	title: str = Field(None, max_length=256)
-	description: Optional[str] = None
-
-class ShortenResponse(BaseModel):
-	original_url: str
-	short_code: str
-	alias: Optional[str] = None
-	short_url: str
-	title: str
-	description: Optional[str] = None
-	clicks: int
-	user_id: int = None
-	created_at: str
+from app.schemas.shorturl import AliasRequest, ShortenRequest, ShortenResponse
 
 # Alias
 

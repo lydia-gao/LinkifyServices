@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Path, status
-from pydantic import BaseModel, Field
+from pydantic import Field
 from app.models.models import Users
 from app.database.database import SessionLocal
 from typing import Annotated
@@ -27,9 +27,7 @@ user_dependency = Annotated[dict, Depends(get_current_user)]
 bcrypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto") 
 
 
-class UserVerification(BaseModel):
-    password: str
-    new_password: str
+from app.schemas.users import UserVerification
 
 
 @router.get('/', status_code=status.HTTP_200_OK)

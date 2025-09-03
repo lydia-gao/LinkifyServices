@@ -1,7 +1,7 @@
 import base64
 from fastapi import APIRouter, HTTPException, status, Depends, Response
 from fastapi.responses import RedirectResponse
-from pydantic import BaseModel, Field, AnyUrl
+from pydantic import Field, AnyUrl
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from app.models.models import Barcode
@@ -33,21 +33,7 @@ user_dependency = Annotated[dict, Depends(get_current_user)]
 
 
 # ---------- Request / Response Models ----------
-class BarcodeRequest(BaseModel):
-    original_url: AnyUrl
-    title: str = Field(None, max_length=256)
-    description: Optional[str] = None
-
-
-class BarcodeResponse(BaseModel):
-    original_url: str
-    barcode_id: str
-    barcode_image: str
-    title: str = None
-    description: Optional[str] = None
-    scans: int
-    user_id: int = None
-    created_at: str
+from app.schemas.barcode import BarcodeRequest, BarcodeResponse
 
 
 # ---------- Endpoints ----------
