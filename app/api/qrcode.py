@@ -1,30 +1,18 @@
-import base64
-from fastapi import APIRouter, HTTPException, status, Depends, Body, Response
-from fastapi.responses import RedirectResponse
-from pydantic import Field, AnyUrl
-from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
+from fastapi import APIRouter, HTTPException, status, Response
 from app.models.models import Qrcode
-from app.database.database import SessionLocal
-import string
-from typing import Annotated, Optional
-from app.api.auth import get_current_user
 from app.core.config import settings
 from app.services.qrcode_service import create_qrcode_logic, get_all_qrcodes_for_user
 from app.utils.qrcode_utils import to_qr_code
 from app.utils.redirect_utils import redirect_to_original
+from app.database.dependencies import db_dependency, user_dependency
+from app.schemas.qrcode import QRCodeRequest
+
 
 router = APIRouter(
 	prefix="/qrcodes",
 	tags=["qrcodes"]
 )
 
-
-# Use shared dependencies
-from app.database.dependencies import db_dependency, user_dependency
-
-
-from app.schemas.qrcode import QRCodeRequest, QRCodeResponse
 
 
 @router.get("/", status_code=status.HTTP_200_OK)

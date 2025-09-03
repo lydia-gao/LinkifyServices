@@ -1,32 +1,18 @@
-import base64
-from fastapi import APIRouter, HTTPException, status, Depends, Response
-from fastapi.responses import RedirectResponse
-from pydantic import Field, AnyUrl
-from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
-from app.models.models import Barcode
-from app.database.database import SessionLocal
-from typing import Annotated, Optional
-from app.api.auth import get_current_user
+from fastapi import APIRouter, HTTPException, status, Response
 from app.core.config import settings
+from app.models.models import Barcode
 from app.services.barcode_service import create_barcode_logic, get_all_barcodes_for_user
 from app.utils.barcode_utils import to_barcode
 from app.utils.redirect_utils import redirect_to_original
-
+# Use shared dependencies
+from app.database.dependencies import db_dependency, user_dependency
+# Request / Response Models
+from app.schemas.barcode import BarcodeRequest
 
 router = APIRouter(
     prefix="/barcodes",
     tags=["barcodes"]
 )
-
-
-
-# Use shared dependencies
-from app.database.dependencies import db_dependency, user_dependency
-
-
-# ---------- Request / Response Models ----------
-from app.schemas.barcode import BarcodeRequest, BarcodeResponse
 
 
 # ---------- Endpoints ----------

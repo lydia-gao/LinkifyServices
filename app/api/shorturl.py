@@ -1,32 +1,15 @@
-from fastapi import APIRouter, HTTPException, status, Depends, Body, Response
-from fastapi.responses import RedirectResponse
-from pydantic import Field, AnyUrl
-from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
+from fastapi import APIRouter, HTTPException, status, Response
 from app.models.models import ShortUrl
-from app.database.database import SessionLocal
-from typing import Annotated, Optional
-from app.api.auth import get_current_user
-from app.core.config import settings
 from app.utils.redirect_utils import redirect_to_original
 from app.services.shorturl_service import (
-	create_short_url_logic, check_alias_logic, update_alias_logic, get_alias_logic, remove_alias_logic
-)
+	create_short_url_logic, check_alias_logic, update_alias_logic, get_alias_logic, remove_alias_logic)
+from app.database.dependencies import db_dependency, user_dependency
+from app.schemas.shorturl import AliasRequest, ShortenRequest
 
 router = APIRouter(
 	prefix="/shorturls",
 	tags=["shorturls"]
 )
-
-
-# Use shared dependencies
-from app.database.dependencies import db_dependency, user_dependency
-
-
-from app.schemas.shorturl import AliasRequest, ShortenRequest, ShortenResponse
-
-# Alias
-
 
 
 @router.get("/", status_code=status.HTTP_200_OK)
