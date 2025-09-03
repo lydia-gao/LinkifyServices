@@ -8,8 +8,10 @@ from app.database.database import SessionLocal
 from typing import Annotated, Optional
 from app.api.auth import get_current_user
 from app.core.config import settings
-from app.utils.encoding_base62 import to_base62
 from app.utils.redirect_utils import redirect_to_original
+from app.services.shorturl_service import (
+	create_short_url_logic, check_alias_logic, update_alias_logic, get_alias_logic, remove_alias_logic
+)
 
 router = APIRouter(
 	prefix="/shorturls",
@@ -32,15 +34,6 @@ from app.schemas.shorturl import AliasRequest, ShortenRequest, ShortenResponse
 
 # Alias
 
-def normalize_alias(alias: str) -> str:
-    alias = alias.strip()
-    return alias
-
-def shortpath_exists(code: str, db: Session) -> bool:
-    return db.query(ShortUrl).filter(
-        (ShortUrl.short_code == code) | (ShortUrl.alias == code)
-    ).first() is not None
-
 
 
 @router.get("/", status_code=status.HTTP_200_OK)
@@ -58,50 +51,10 @@ async def create_short_url(
 ):
 	if user is None:
 		raise HTTPException(status_code=401, detail='Authentication Failed')
-      
-	alias = None
-	if req.alias:
-		alias = normalize_alias(req.alias)
-		if shortpath_exists(alias, db):
-			raise HTTPException(status_code=409, detail="Alias already taken")
-
-	url_obj = ShortUrl(
-		original_url=str(req.original_url),
-		alias=alias,
-		title=req.title,
-		description=req.description,
-		user_id=user.get("id"),
-		short_code="tmp"
-	)
-
-	db.add(url_obj)
-	db.flush()
-
-	final_code = to_base62(url_obj.id)
-	if shortpath_exists(final_code, db):
-		raise HTTPException(status_code=409, detail="Short code collision, please retry")
-	url_obj.short_code = final_code
-
 	try:
-		db.commit()
-	except IntegrityError:
-		db.rollback()
-		raise HTTPException(status_code=409, detail="Unique constraint violation, please retry")
-	db.refresh(url_obj)
-
-	short_url = f"{settings.base_url}/url/{url_obj.short_code}"
-
-	return ShortenResponse(
-		original_url=url_obj.original_url,
-		short_code=url_obj.short_code,
-		alias=url_obj.alias,
-		short_url=short_url,
-		title=url_obj.title,
-		description=url_obj.description,
-		clicks=url_obj.clicks,
-		user_id=url_obj.user_id,
-		created_at=url_obj.created_at.isoformat()
-	)
+		return create_short_url_logic(user.get("id"), req, db)
+	except ValueError as e:
+		raise HTTPException(status_code=409, detail=str(e))
 
 # 2.2. Redirect from Short URL
 @router.get("/{short_code}", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
@@ -117,36 +70,35 @@ async def redirect_short_url(short_code: str, db: db_dependency):
 
 @router.post("/aliases/check")
 async def check_alias(payload: AliasRequest, db: db_dependency):
-    # Normalize (e.g., lower, trim) before checking
-    alias = normalize_alias(payload.alias)
-    return {"available": not shortpath_exists(alias, db)}
+	try:
+		available = check_alias_logic(payload.alias, db)
+		return {"available": available}
+	except Exception as e:
+		raise HTTPException(status_code=400, detail=str(e))
 
 @router.patch("/{short_code}/alias")
 async def update_alias(short_code: str, payload: AliasRequest, db: db_dependency):
-    new_alias = normalize_alias(payload.alias)
-    if shortpath_exists(new_alias, db):
-        raise HTTPException(409, detail="Alias already taken")
-    obj = db.query(ShortUrl).filter(ShortUrl.short_code == short_code).first()
-    if not obj:
-        raise HTTPException(status_code=404, detail="Short URL not found")
-    obj.alias = new_alias
-    db.commit()
-    return {"ok": True}
+	try:
+		update_alias_logic(short_code, payload.alias, db)
+		return {"ok": True}
+	except ValueError as e:
+		raise HTTPException(status_code=409, detail=str(e))
+	except LookupError as e:
+		raise HTTPException(status_code=404, detail=str(e))
 
 # 2.4. Get Alias
 @router.get("/{short_code}/alias")
 async def get_alias(short_code: str, db: db_dependency):
-	obj = db.query(ShortUrl).filter(ShortUrl.short_code == short_code).first()
-	if not obj:
-		raise HTTPException(status_code=404, detail="Short URL not found")
-	return {"short_code": obj.short_code, "alias": obj.alias}
+	try:
+		return get_alias_logic(short_code, db)
+	except LookupError as e:
+		raise HTTPException(status_code=404, detail=str(e))
 
 # 2.5. Remove Alias
 @router.delete("/{short_code}/alias", status_code=204)
 async def remove_alias(short_code: str, db: db_dependency):
-	obj = db.query(ShortUrl).filter(ShortUrl.short_code == short_code).first()
-	if not obj:
-		raise HTTPException(status_code=404, detail="Short URL not found")
-	obj.alias = None
-	db.commit()
-	return Response(status_code=204)
+	try:
+		remove_alias_logic(short_code, db)
+		return Response(status_code=204)
+	except LookupError as e:
+		raise HTTPException(status_code=404, detail=str(e))

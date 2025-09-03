@@ -9,8 +9,8 @@ from app.database.database import SessionLocal
 from typing import Annotated, Optional
 from app.api.auth import get_current_user
 from app.core.config import settings
+from app.services.barcode_service import create_barcode_logic, get_all_barcodes_for_user
 from app.utils.barcode_utils import to_barcode
-from app.utils.random_id import generate_random_id
 from app.utils.redirect_utils import redirect_to_original
 
 
@@ -43,7 +43,7 @@ from app.schemas.barcode import BarcodeRequest, BarcodeResponse
 async def read_all(user: user_dependency, db: db_dependency):
     if user is None:
         raise HTTPException(status_code=401, detail='Authentication Failed')
-    return db.query(Barcode).filter(Barcode.user_id == user.get('id')).all()
+    return get_all_barcodes_for_user(user.get('id'), db)
 
 
 # 2. Generate Barcode
@@ -51,45 +51,14 @@ async def read_all(user: user_dependency, db: db_dependency):
 async def create_barcode(
     user: user_dependency,
     req: BarcodeRequest,
-    db: Session = Depends(get_db) 
+    db: Session = Depends(get_db)
 ):
     if user is None:
         raise HTTPException(status_code=401, detail='Authentication Failed')
-
-    for _ in range(5):
-        barcode_id = generate_random_id(10)
-        barcode = Barcode(
-            original_url=str(req.original_url),
-            title=req.title,
-            description=req.description,
-            user_id=user.get("id"),
-            barcode_id=barcode_id,
-        )
-
-        db.add(barcode)
-        try:
-            db.commit()
-            db.refresh(barcode)
-            break
-        except IntegrityError:
-            db.rollback()
-    else:
-        raise HTTPException(status_code=409, detail="Failed to generate unique barcode_id after retries")
-
-    barcode_url = f"{settings.base_url}/barcodes/{barcode.barcode_id}"
-    barcode_image = to_barcode(original_url=barcode_url, file_path=None)
-    barcode_image_str = base64.b64encode(barcode_image.getvalue()).decode("utf-8")
-
-    return BarcodeResponse(
-        original_url=str(req.original_url),
-        barcode_id=barcode.barcode_id,
-        barcode_image=barcode_image_str,
-        title=req.title,
-        description=req.description,
-        scans=0,
-        user_id=barcode.user_id,
-        created_at=barcode.created_at.isoformat()
-    )
+    try:
+        return create_barcode_logic(user.get("id"), req, db)
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
 
 
 # 3. Get Barcode Image

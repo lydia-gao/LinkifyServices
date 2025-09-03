@@ -10,8 +10,8 @@ import string
 from typing import Annotated, Optional
 from app.api.auth import get_current_user
 from app.core.config import settings
+from app.services.qrcode_service import create_qrcode_logic, get_all_qrcodes_for_user
 from app.utils.qrcode_utils import to_qr_code
-from app.utils.random_id import generate_random_id
 from app.utils.redirect_utils import redirect_to_original
 
 router = APIRouter(
@@ -36,56 +36,23 @@ from app.schemas.qrcode import QRCodeRequest, QRCodeResponse
 
 @router.get("/", status_code=status.HTTP_200_OK)
 async def read_all(user: user_dependency, db: db_dependency):
-    if user is None:
-        raise HTTPException(status_code=401, detail='Authentication Failed')
-    return db.query(Qrcode).filter(Qrcode.user_id == user.get('id')).all()
+	if user is None:
+		raise HTTPException(status_code=401, detail='Authentication Failed')
+	return get_all_qrcodes_for_user(user.get('id'), db)
 
 # 3.1. Generate QR Code
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_qrcode(
 	user: user_dependency,
 	req: QRCodeRequest,
-	db: Session = Depends(get_db) 
+	db: Session = Depends(get_db)
 ):
 	if user is None:
 		raise HTTPException(status_code=401, detail='Authentication Failed')
-	
-	for _ in range(5):
-		qr_code_id = generate_random_id(10) 
-		qr_code = Qrcode(
-            original_url=str(req.original_url),
-            title=req.title,
-            description=req.description,
-            user_id=user.get("id"),
-            qr_code_id=qr_code_id,
-        )
-
-		db.add(qr_code)
-		try:
-			db.commit()
-			db.refresh(qr_code)
-			break
-		except IntegrityError:
-			db.rollback()
-	else:
-		raise HTTPException(status_code=409, detail="Failed to generate unique qr_code_id after retries")
-
-
-	qr_code_url = f"{settings.base_url}/qrcode/{qr_code.qr_code_id}"
-
-	qr_code_image = to_qr_code(original_url=qr_code_url, file_path=None)
-	qr_code_image_str = base64.b64encode(qr_code_image.getvalue()).decode("utf-8")
-
-	return QRCodeResponse(
-		original_url=str(req.original_url),
-		qr_code_id=qr_code.qr_code_id,
-		qr_code_image=qr_code_image_str,
-		title=req.title,
-		description=req.description,
-		scans=0,
-		user_id=qr_code.user_id,
-		created_at=qr_code.created_at.isoformat()
-	)
+	try:
+		return create_qrcode_logic(user.get("id"), req, db)
+	except ValueError as e:
+		raise HTTPException(status_code=409, detail=str(e))
 
 
 # 3.2. Get QR Code Image
