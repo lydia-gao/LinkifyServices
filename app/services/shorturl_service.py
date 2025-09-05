@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from app.models.models import ShortUrl
+from app.models import ShortUrl
 from app.schemas.shorturl import ShortenRequest, ShortenResponse, AliasRequest
 from app.utils.encoding_base62 import to_base62
 from app.core.config import settings

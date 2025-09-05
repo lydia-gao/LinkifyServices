@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Path, status
 from pydantic import Field
-from app.models.models import Users
-from app.database.database import SessionLocal
+from app.models import User
+from app.db.session import SessionLocal
 from typing import Annotated
 from sqlalchemy.orm import Session
 from .auth import get_current_user
@@ -36,5 +36,5 @@ async def get_user(user: user_dependency, db: db_dependency):
     if user is None:
         raise HTTPException(status_code=401, detail='Authentication Failed')
     
-    return db.query(Users).filter(Users.id == user.get('id')).first()
+    return db.query(User).filter(User.id == user.get('id')).first()
 

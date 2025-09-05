@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from app.models.models import Barcode
+from app.models import Barcode
 from app.schemas.barcode import BarcodeRequest, BarcodeResponse
 from app.utils.barcode_utils import to_barcode
 from app.utils.random_id import generate_random_id

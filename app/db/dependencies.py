@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from app.database.database import SessionLocal
+from app.db.session import SessionLocal
 from typing import Annotated
 from fastapi import Depends
 from app.api.auth import get_current_user

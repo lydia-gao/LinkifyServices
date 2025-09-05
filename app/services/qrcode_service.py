@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from app.models.models import Qrcode
+from app.models import Qrcode
 from app.schemas.qrcode import QRCodeRequest, QRCodeResponse
 from app.utils.qrcode_utils import to_qr_code
 from app.utils.random_id import generate_random_id

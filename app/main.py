@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request, status
-from app.models.models import Base
-from app.database.database import engine
+from app.db.init_db import Base
+from app.db.session import engine
 from app.api import analytics, barcode, qrcode, shorturl, metadata, auth, users
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
