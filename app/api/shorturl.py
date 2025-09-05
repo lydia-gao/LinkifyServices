@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException, status, Response
-from app.models.models import ShortUrl
+from app.models import ShortUrl
 from app.utils.redirect_utils import redirect_to_original
 from app.services.shorturl_service import (
 	create_short_url_logic, check_alias_logic, update_alias_logic, get_alias_logic, remove_alias_logic)
-from app.database.dependencies import db_dependency, user_dependency
+from app.db.dependencies import db_dependency, user_dependency
 from app.schemas.shorturl import AliasRequest, ShortenRequest
 
 router = APIRouter(

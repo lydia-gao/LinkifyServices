@@ -1,11 +1,11 @@
 from fastapi import APIRouter, HTTPException, status, Response
 from app.core.config import settings
-from app.models.models import Barcode
+from app.models import Barcode
 from app.services.barcode_service import create_barcode_logic, get_all_barcodes_for_user
 from app.utils.barcode_utils import to_barcode
 from app.utils.redirect_utils import redirect_to_original
 # Use shared dependencies
-from app.database.dependencies import db_dependency, user_dependency
+from app.db.dependencies import db_dependency, user_dependency
 # Request / Response Models
 from app.schemas.barcode import BarcodeRequest
 

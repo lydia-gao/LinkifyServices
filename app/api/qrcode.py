@@ -1,10 +1,10 @@
 from fastapi import APIRouter, HTTPException, status, Response
-from app.models.models import Qrcode
+from app.models import Qrcode
 from app.core.config import settings
 from app.services.qrcode_service import create_qrcode_logic, get_all_qrcodes_for_user
 from app.utils.qrcode_utils import to_qr_code
 from app.utils.redirect_utils import redirect_to_original
-from app.database.dependencies import db_dependency, user_dependency
+from app.db.dependencies import db_dependency, user_dependency
 from app.schemas.qrcode import QRCodeRequest
 
 
