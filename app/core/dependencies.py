@@ -2,7 +2,6 @@ from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
 from typing import Annotated
 from fastapi import Depends
-from app.api.auth import get_current_user
 from app.core.security import oauth2_bearer, SECRET_KEY, ALGORITHM
 from jose import jwt, JWTError
 from fastapi import HTTPException, status

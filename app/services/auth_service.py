@@ -1,14 +1,13 @@
 from datetime import timedelta, timezone
 import datetime
 from typing import Annotated
-from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from app.core.security import bcrypt_context, SECRET_KEY, ALGORITHM
 from fastapi import Depends, Depends, HTTPException, status
-from models import User
+from app.models import User
+from app.core.security import oauth2_bearer
 
-
-oauth2_bearer = OAuth2PasswordBearer(tokenUrl="auth/token") 
 
 def authenticate_user(db, username: str, password: str):
     user = db.query(User).filter(User.username == username).first()
@@ -22,7 +21,7 @@ def create_user_logic(req, db):
     user = db.query(User).filter(User.username == req.username).first()
     if user:
         raise Exception("Username already exists")
-    hashed_password = bcrypt_context.hash(req.password)
+    hashed_password = bcrypt_context.hash(req.hashed_password)
     new_user = User(
         username=req.username,
         email=req.email,
