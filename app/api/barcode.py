@@ -5,7 +5,7 @@ from app.services.barcode_service import create_barcode_logic, get_all_barcodes_
 from app.utils.barcode_utils import to_barcode
 from app.utils.redirect_utils import redirect_to_original
 # Use shared dependencies
-from app.db.dependencies import db_dependency, user_dependency
+from app.core.dependencies import db_dependency, user_dependency
 # Request / Response Models
 from app.schemas.barcode import BarcodeRequest
 
@@ -20,8 +20,6 @@ router = APIRouter(
 # 1. Read all barcodes for user
 @router.get("/", status_code=status.HTTP_200_OK)
 async def read_all(user: user_dependency, db: db_dependency):
-    if user is None:
-        raise HTTPException(status_code=401, detail='Authentication Failed')
     return get_all_barcodes_for_user(user.get('id'), db)
 
 
@@ -32,8 +30,6 @@ async def create_barcode(
     req: BarcodeRequest,
     db: db_dependency
 ):
-    if user is None:
-        raise HTTPException(status_code=401, detail='Authentication Failed')
     try:
         return create_barcode_logic(user.get("id"), req, db)
     except ValueError as e:

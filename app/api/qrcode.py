@@ -4,7 +4,7 @@ from app.core.config import settings
 from app.services.qrcode_service import create_qrcode_logic, get_all_qrcodes_for_user
 from app.utils.qrcode_utils import to_qr_code
 from app.utils.redirect_utils import redirect_to_original
-from app.db.dependencies import db_dependency, user_dependency
+from app.core.dependencies import db_dependency, user_dependency
 from app.schemas.qrcode import QRCodeRequest
 
 
@@ -17,8 +17,6 @@ router = APIRouter(
 
 @router.get("/", status_code=status.HTTP_200_OK)
 async def read_all(user: user_dependency, db: db_dependency):
-	if user is None:
-		raise HTTPException(status_code=401, detail='Authentication Failed')
 	return get_all_qrcodes_for_user(user.get('id'), db)
 
 # 3.1. Generate QR Code
@@ -28,8 +26,6 @@ async def create_qrcode(
 	req: QRCodeRequest,
 	db: db_dependency
 ):
-	if user is None:
-		raise HTTPException(status_code=401, detail='Authentication Failed')
 	try:
 		return create_qrcode_logic(user.get("id"), req, db)
 	except ValueError as e:
