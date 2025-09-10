@@ -14,5 +14,5 @@ GOOGLE_CLIENT_SECRET=your_google_client_secret
 To run the application, use the following command:
 
 ```bash
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
