@@ -3,6 +3,10 @@ from app.core.config import settings
 from app.models import Barcode
 from app.services.barcode_service import create_barcode_logic, get_all_barcodes_for_user
 from app.utils.barcode_utils import to_barcode
+from app.utils.cache import cache_get_bytes, cache_set_bytes
+from app.celery_app import get_task_info
+from app.celery_tasks.tasks import create_barcode_task
+from starlette.responses import JSONResponse
 from app.utils.redirect_utils import redirect_to_original
 # Use shared dependencies
 from app.core.dependencies import db_dependency, user_dependency
@@ -36,6 +40,22 @@ async def create_barcode(
         raise HTTPException(status_code=409, detail=str(e))
 
 
+# 2.b. Generate Barcode (async via Celery)
+@router.post("/async", status_code=status.HTTP_202_ACCEPTED)
+async def create_barcode_async(
+    user: user_dependency,
+    req: BarcodeRequest
+):
+    task = create_barcode_task.apply_async(args=[user.get("id"), req.model_dump()])
+    return JSONResponse({"task_id": task.id})
+
+
+# Task status
+@router.get("/task/{task_id}")
+async def get_barcode_task_status(task_id: str):
+    return get_task_info(task_id)
+
+
 # 3. Get Barcode Image
 @router.get("/{barcode_id}/image")
 async def get_barcode_image(barcode_id: str, db: db_dependency):
@@ -43,11 +63,18 @@ async def get_barcode_image(barcode_id: str, db: db_dependency):
     if not obj:
         raise HTTPException(status_code=404, detail="Barcode not found")
 
+    cache_key = f"barcode:image:{obj.barcode_id}"
+    cached = cache_get_bytes(cache_key)
+    if cached:
+        return Response(content=cached, media_type="image/png")
+
     buffer = to_barcode(
         original_url=f"{settings.base_url}/barcodes/{obj.barcode_id}",
         file_path=None
     )
-    return Response(content=buffer.getvalue(), media_type="image/png")
+    img_bytes = buffer.getvalue()
+    cache_set_bytes(cache_key, img_bytes, ttl_seconds=3600)
+    return Response(content=img_bytes, media_type="image/png")
 
 
 # 4. Redirect from Barcode

@@ -22,22 +22,22 @@
       - [2.4. Get Alias](#24-get-alias)
       - [2.5. Remove Alias](#25-remove-alias)
     - [3. QR Code Endpoints](#3-qr-code-endpoints)
-      - [3.1. Generate QR Code](#31-generate-qr-code)
-      - [3.2. Get QR Code Image](#32-get-qr-code-image)
+      - [3.1. Generate QR Code (Sync)](#31-generate-qr-code-sync)
+      - [3.1.b. Generate QR Code (Async, Celery)](#31b-generate-qr-code-async-celery)
+      - [3.2. Get QR Code Image (Redis Cache)](#32-get-qr-code-image-redis-cache)
       - [3.3. Redirect from QR Code](#33-redirect-from-qr-code)
+      - [3.4. Get QR Code Task Status (Celery)](#34-get-qr-code-task-status-celery)
     - [4. Barcode Endpoints](#4-barcode-endpoints)
-      - [4.1. Generate Barcode](#41-generate-barcode)
-      - [4.2. Get Barcode Image](#42-get-barcode-image)
+      - [4.1. Generate Barcode (Sync)](#41-generate-barcode-sync)
+      - [4.1.b. Generate Barcode (Async, Celery)](#41b-generate-barcode-async-celery)
+      - [4.2. Get Barcode Image (Redis Cache)](#42-get-barcode-image-redis-cache)
       - [4.3. Redirect from Barcode](#43-redirect-from-barcode)
-    - [5. History Endpoints](#5-history-endpoints)
-      - [5.1. Get URL History](#51-get-url-history)
-      - [5.2. Get QR Code History](#52-get-qr-code-history)
-      - [5.3. Get Barcode History](#53-get-barcode-history)
-    - [6. Analytics Endpoints](#6-analytics-endpoints)
-      - [6.1. Get Short URL Analytics](#61-get-short-url-analytics)
-      - [6.2. Get QR Code Analytics](#62-get-qr-code-analytics)
-      - [6.3. Get Barcode Analytics](#63-get-barcode-analytics)
-      - [6.4. Get Aggregated Analytics](#64-get-aggregated-analytics)
+      - [4.4. Get Barcode Task Status (Celery)](#44-get-barcode-task-status-celery)
+    - [5. Analytics Endpoints](#5-analytics-endpoints)
+      - [5.1. Get Short URL Analytics](#51-get-short-url-analytics)
+      - [5.2. Get QR Code Analytics](#52-get-qr-code-analytics)
+      - [5.3. Get Barcode Analytics](#53-get-barcode-analytics)
+      - [5.4. Get Aggregated Analytics](#54-get-aggregated-analytics)
   - [Environment Variables](#environment-variables)
   - [Website Title Extraction](#website-title-extraction)
 
@@ -47,41 +47,24 @@
 
 This document outlines the API endpoints for the Linkify service. Linkify allows users to:
 
-1. **User Management (more features in the future)**
-
-   1. Create user accounts (username/password or Google)
-   2. Login and logout via JWT authentication
-   3. Manage user profile information
-
+1. **User Management**
+   - Create user accounts (username/password or Google)
+   - Login and logout via JWT authentication
+   - Manage user profile information
 2. **Short URLs**
-
-   1. Create short URLs from long ones with automatic title extraction
-   2. Redirect from short URLs to their original destinations
-
+   - Create short URLs from long ones with automatic title extraction
+   - Redirect from short URLs to their original destinations
 3. **QR Codes**
-
-   1. Generate QR codes from URLs with automatic title extraction
-   2. Get QR code images (generated on demand)
-   3. Redirect from QR codes to their original destinations
-
+   - Generate QR codes from URLs (sync or async via Celery)
+   - Get QR code images (cached in Redis)
+   - Redirect from QR codes to their original destinations
 4. **Barcodes**
-
-   1. Generate barcodes from URLs with automatic title extraction
-   2. Get barcode images (generated on demand)
-   3. Redirect from barcodes to their original destinations
-
-5. **History**
-
-   1. View paginated history of URLs created by a user
-   2. View paginated history of QR codes created by a user
-   3. View paginated history of barcodes created by a user
-
-6. **Analytics**
-   1. View detailed statistics about individual resources
-   2. Track usage by location, device, browser, etc.
-   3. Access aggregated analytics data for visualization
-
-Each resource (URL, QR code, barcode) automatically extracts and stores the title of the target website for better context in the history and analytics views.
+   - Generate barcodes from URLs (sync or async via Celery)
+   - Get barcode images (cached in Redis)
+   - Redirect from barcodes to their original destinations
+5. **Analytics**
+   - View detailed statistics about individual resources
+   - Access aggregated analytics data for visualization
 
 ---
 
@@ -399,11 +382,11 @@ Each resource (URL, QR code, barcode) automatically extracts and stores the titl
 
 ### 3. QR Code Endpoints
 
-#### 3.1. Generate QR Code
+#### 3.1. Generate QR Code (Sync)
 
 **Purpose:** Create a QR code from a URL. Automatically extracts website title.
 
-**Endpoint:** `/qrcode/`
+**Endpoint:** `/qrcodes/`
 
 **Method:** `POST`
 
@@ -435,11 +418,38 @@ Each resource (URL, QR code, barcode) automatically extracts and stores the titl
 
 ---
 
-#### 3.2. Get QR Code Image
+#### 3.1.b. Generate QR Code (Async, Celery)
+
+**Purpose:** Create a QR code from a URL asynchronously using Celery.
+
+**Endpoint:** `/qrcodes/async`
+
+**Method:** `POST`
+
+**Request Body:**
+
+```json
+{
+  "original_url": "https://example.com/your/long/url"
+}
+```
+
+**Response:** (202 Accepted)
+
+```json
+{
+  "task_id": "abc123task",
+  "status": "pending"
+}
+```
+
+---
+
+#### 3.2. Get QR Code Image (Redis Cache)
 
 **Purpose:** Retrieve the generated QR code image.
 
-**Endpoint:** `/qrcode/{qr_code_id}/image`
+**Endpoint:** `/qrcodes/{qr_code_id}/image`
 
 **Method:** `GET`
 
@@ -454,7 +464,7 @@ Each resource (URL, QR code, barcode) automatically extracts and stores the titl
 
 **Purpose:** Redirect visitors to the original URL when they scan a QR code.
 
-**Endpoint:** `/qrcode/{qr_code_id}`
+**Endpoint:** `/qrcodes/{qr_code_id}`
 
 **Method:** `GET`
 
@@ -471,13 +481,41 @@ Each resource (URL, QR code, barcode) automatically extracts and stores the titl
 
 ---
 
+#### 3.4. Get QR Code Task Status (Celery)
+
+**Purpose:** Get the status and result of an asynchronous QR code creation task.
+
+**Endpoint:** `/qrcodes/task/{task_id}`
+
+**Method:** `GET`
+
+**Response:**
+
+```json
+{
+  "task_id": "abc123task",
+  "status": "success",
+  "result": {
+    "original_url": "https://example.com/your/long/url",
+    "qr_code_id": "qr123",
+    "qr_code_url": "http://localhost:8000/qrcode/qr123",
+    "title": "Example Website Homepage",
+    "scans": 0,
+    "user_id": 42,
+    "created_at": "2025-05-15T14:30:00Z"
+  }
+}
+```
+
+---
+
 ### 4. Barcode Endpoints
 
-#### 4.1. Generate Barcode
+#### 4.1. Generate Barcode (Sync)
 
 **Purpose:** Create a barcode from a URL. Automatically extracts website title.
 
-**Endpoint:** `/barcode/`
+**Endpoint:** `/barcodes/`
 
 **Method:** `POST`
 
@@ -509,11 +547,38 @@ Each resource (URL, QR code, barcode) automatically extracts and stores the titl
 
 ---
 
-#### 4.2. Get Barcode Image
+#### 4.1.b. Generate Barcode (Async, Celery)
+
+**Purpose:** Create a barcode from a URL asynchronously using Celery.
+
+**Endpoint:** `/barcodes/async`
+
+**Method:** `POST`
+
+**Request Body:**
+
+```json
+{
+  "original_url": "https://example.com/your/long/url"
+}
+```
+
+**Response:** (202 Accepted)
+
+```json
+{
+  "task_id": "def456task",
+  "status": "pending"
+}
+```
+
+---
+
+#### 4.2. Get Barcode Image (Redis Cache)
 
 **Purpose:** Retrieve the generated barcode image.
 
-**Endpoint:** `/barcode/{barcode_id}/image`
+**Endpoint:** `/barcodes/{barcode_id}/image`
 
 **Method:** `GET`
 
@@ -528,7 +593,7 @@ Each resource (URL, QR code, barcode) automatically extracts and stores the titl
 
 **Purpose:** Redirect visitors to the original URL when they scan a barcode.
 
-**Endpoint:** `/barcode/{barcode_id}`
+**Endpoint:** `/barcodes/{barcode_id}`
 
 **Method:** `GET`
 
@@ -545,162 +610,41 @@ Each resource (URL, QR code, barcode) automatically extracts and stores the titl
 
 ---
 
-### 5. History Endpoints
+#### 4.4. Get Barcode Task Status (Celery)
 
-#### 5.1. Get URL History
+**Purpose:** Get the status and result of an asynchronous barcode creation task.
 
-**Purpose:** Retrieve all shortened URLs created by the current user with pagination.
-
-**Endpoint:** `/urls/history`
+**Endpoint:** `/barcodes/task/{task_id}`
 
 **Method:** `GET`
-
-**Headers:**
-
-- Authorization: Bearer {access_token}
-
-**Query Parameters:**
-
-- `page=1` - Page number for pagination (default: 1)
-- `limit=20` - Number of items per page (default: 20)
-- `sort=created_at|clicks` - Sort field (default: created_at)
-- `order=asc|desc` - Sort order (default: desc)
 
 **Response:**
 
 ```json
 {
-  "page": 1,
-  "limit": 20,
-  "total": 35,
-  "urls": [
-    {
-      "original_url": "https://example.com/your/long/url",
-      "short_code": "abc123",
-      "short_url": "http://localhost:8000/abc123",
-      "title": "Example Website Homepage",
-      "clicks": 42,
-      "created_at": "2025-05-15T14:30:00Z"
-    },
-    {
-      "original_url": "https://example.com/another/page",
-      "short_code": "def456",
-      "short_url": "http://localhost:8000/def456",
-      "title": "Another Example Page",
-      "clicks": 18,
-      "created_at": "2025-05-16T10:15:00Z"
-    }
-  ]
+  "task_id": "def456task",
+  "status": "success",
+  "result": {
+    "original_url": "https://example.com/your/long/url",
+    "barcode_id": "bar123",
+    "barcode_url": "http://localhost:8000/barcode/bar123",
+    "title": "Example Website Homepage",
+    "scans": 0,
+    "user_id": 42,
+    "created_at": "2025-05-15T14:30:00Z"
+  }
 }
 ```
 
 ---
 
-#### 5.2. Get QR Code History
+### 5. Analytics Endpoints
 
-**Purpose:** Retrieve all QR codes created by the current user with pagination.
-
-**Endpoint:** `/qrcodes/history`
-
-**Method:** `GET`
-
-**Headers:**
-
-- Authorization: Bearer {access_token}
-
-**Query Parameters:**
-
-- `page=1` - Page number for pagination (default: 1)
-- `limit=20` - Number of items per page (default: 20)
-- `sort=created_at|scans` - Sort field (default: created_at)
-- `order=asc|desc` - Sort order (default: desc)
-
-**Response:**
-
-```json
-{
-  "page": 1,
-  "limit": 20,
-  "total": 22,
-  "qrcodes": [
-    {
-      "original_url": "https://example.com/your/long/url",
-      "qr_code_id": "qr123",
-      "qr_code_url": "http://localhost:8000/qrcode/qr123",
-      "title": "Example Website Homepage",
-      "scans": 35,
-      "created_at": "2025-05-15T14:30:00Z"
-    },
-    {
-      "original_url": "https://example.com/another/url",
-      "qr_code_id": "qr456",
-      "qr_code_url": "http://localhost:8000/qrcode/qr456",
-      "title": "Another Example Page",
-      "scans": 24,
-      "created_at": "2025-05-16T10:15:00Z"
-    }
-  ]
-}
-```
-
----
-
-#### 5.3. Get Barcode History
-
-**Purpose:** Retrieve all barcodes created by the current user with pagination.
-
-**Endpoint:** `/barcodes/history`
-
-**Method:** `GET`
-
-**Headers:**
-
-- Authorization: Bearer {access_token}
-
-**Query Parameters:**
-
-- `page=1` - Page number for pagination (default: 1)
-- `limit=20` - Number of items per page (default: 20)
-- `sort=created_at|scans` - Sort field (default: created_at)
-- `order=asc|desc` - Sort order (default: desc)
-
-**Response:**
-
-```json
-{
-  "page": 1,
-  "limit": 20,
-  "total": 15,
-  "barcodes": [
-    {
-      "original_url": "https://example.com/your/long/url",
-      "barcode_id": "bar123",
-      "barcode_url": "http://localhost:8000/barcode/bar123",
-      "title": "Example Website Homepage",
-      "scans": 28,
-      "created_at": "2025-05-15T14:30:00Z"
-    },
-    {
-      "original_url": "https://example.com/another/url",
-      "barcode_id": "bar456",
-      "barcode_url": "http://localhost:8000/barcode/bar456",
-      "title": "Another Example Page",
-      "scans": 16,
-      "created_at": "2025-05-16T10:15:00Z"
-    }
-  ]
-}
-```
-
----
-
-### 6. Analytics Endpoints
-
-#### 6.1. Get Short URL Analytics
+#### 5.1. Get Short URL Analytics
 
 **Purpose:** Retrieve detailed analytics about a short URL.
 
-**Endpoint:** `/analytics/url/{short_code}`
+**Endpoint:** `/analytics/shorturl`
 
 **Method:** `GET`
 
@@ -754,11 +698,11 @@ Each resource (URL, QR code, barcode) automatically extracts and stores the titl
 
 ---
 
-#### 6.2. Get QR Code Analytics
+#### 5.2. Get QR Code Analytics
 
 **Purpose:** Retrieve detailed analytics about a QR code.
 
-**Endpoint:** `/analytics/qrcode/{qr_code_id}`
+**Endpoint:** `/analytics/qrcode`
 
 **Method:** `GET`
 
@@ -801,11 +745,11 @@ Each resource (URL, QR code, barcode) automatically extracts and stores the titl
 
 ---
 
-#### 6.3. Get Barcode Analytics
+#### 5.3. Get Barcode Analytics
 
 **Purpose:** Retrieve detailed analytics about a barcode.
 
-**Endpoint:** `/analytics/barcode/{barcode_id}`
+**Endpoint:** `/analytics/barcode`
 
 **Method:** `GET`
 
@@ -848,11 +792,11 @@ Each resource (URL, QR code, barcode) automatically extracts and stores the titl
 
 ---
 
-#### 6.4. Get Aggregated Analytics
+#### 5.4. Get Aggregated Analytics
 
 **Purpose:** Retrieve aggregated analytics across all URLs, QR codes, and barcodes.
 
-**Endpoint:** `/analytics/summary`
+**Endpoint:** `/analytics/aggregate`
 
 **Method:** `GET`
 
@@ -918,16 +862,19 @@ Each resource (URL, QR code, barcode) automatically extracts and stores the titl
 
 The application requires the following environment variables to be set:
 
-| Variable           | Description                         | Default         |
-| ------------------ | ----------------------------------- | --------------- |
-| DB_NAME            | PostgreSQL database name            | url_shortener   |
-| DB_USER            | PostgreSQL username                 | postgres        |
-| DB_PASSWORD        | PostgreSQL password                 | postgres        |
-| DB_HOST            | PostgreSQL host                     | localhost       |
-| DB_PORT            | PostgreSQL port                     | 5432            |
-| JWT_SECRET         | Secret key for signing JWTs         | None            |
-| JWT_ACCESS_EXPIRE  | Access token expiration in seconds  | 3600 (1 hour)   |
-| JWT_REFRESH_EXPIRE | Refresh token expiration in seconds | 604800 (7 days) |
+| Variable              | Description                         | Default                             |
+| --------------------- | ----------------------------------- | ----------------------------------- |
+| DB_NAME               | PostgreSQL database name            | url_shortener                       |
+| DB_USER               | PostgreSQL username                 | postgres                            |
+| DB_PASSWORD           | PostgreSQL password                 | postgres                            |
+| DB_HOST               | PostgreSQL host                     | localhost                           |
+| DB_PORT               | PostgreSQL port                     | 5432                                |
+| JWT_SECRET            | Secret key for signing JWTs         | None                                |
+| JWT_ACCESS_EXPIRE     | Access token expiration in seconds  | 3600 (1 hour)                       |
+| JWT_REFRESH_EXPIRE    | Refresh token expiration in seconds | 604800 (7 days)                     |
+| CELERY_BROKER_URL     | RabbitMQ broker URL                 | amqp://guest:guest@localhost:5672// |
+| CELERY_RESULT_BACKEND | Redis result backend URL            | redis://localhost:6379/0            |
+| REDIS_URL             | Redis cache URL                     | redis://localhost:6379/1            |
 
 ## Website Title Extraction
 

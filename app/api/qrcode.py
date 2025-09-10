@@ -2,7 +2,11 @@ from fastapi import APIRouter, HTTPException, status, Response
 from app.models import Qrcode
 from app.core.config import settings
 from app.services.qrcode_service import create_qrcode_logic, get_all_qrcodes_for_user
+from app.celery_app import get_task_info
+from app.celery_tasks.tasks import create_qrcode_task
+from starlette.responses import JSONResponse
 from app.utils.qrcode_utils import to_qr_code
+from app.utils.cache import cache_get_bytes, cache_set_bytes
 from app.utils.redirect_utils import redirect_to_original
 from app.core.dependencies import db_dependency, user_dependency
 from app.schemas.qrcode import QRCodeRequest
@@ -32,6 +36,22 @@ async def create_qrcode(
 		raise HTTPException(status_code=409, detail=str(e))
 
 
+# 3.1.b. Generate QR Code (async via Celery)
+@router.post("/async", status_code=status.HTTP_202_ACCEPTED)
+async def create_qrcode_async(
+    user: user_dependency,
+    req: QRCodeRequest
+):
+    task = create_qrcode_task.apply_async(args=[user.get("id"), req.model_dump()])
+    return JSONResponse({"task_id": task.id})
+
+
+# Task status
+@router.get("/task/{task_id}")
+async def get_qrcode_task_status(task_id: str):
+    return get_task_info(task_id)
+
+
 # 3.2. Get QR Code Image
 @router.get("/{qr_code_id}/image")
 async def get_qrcode_image(qr_code_id: str, db: db_dependency):
@@ -41,12 +61,18 @@ async def get_qrcode_image(qr_code_id: str, db: db_dependency):
 
 	# buffer is an in-memory bytes container/memory space (in RAM). 
 	# Python exposes it as a file-like object, so we can use file operations (read, write, seek) without touching disk.
+    cache_key = f"qrcode:image:{obj.qr_code_id}"
+    cached = cache_get_bytes(cache_key)
+    if cached:
+        return Response(content=cached, media_type="image/png")
 
     buffer = to_qr_code(
         original_url=f"{settings.base_url}/qrcode/{obj.qr_code_id}", 
         file_path=None
     )
-    return Response(content=buffer.getvalue(), media_type="image/png")
+    img_bytes = buffer.getvalue()
+    cache_set_bytes(cache_key, img_bytes, ttl_seconds=3600)
+    return Response(content=img_bytes, media_type="image/png")
 
 
 # 3.3. Redirect from QR Code
