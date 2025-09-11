@@ -70,8 +70,8 @@ async def get_qrcode_image(qr_code_id: str, db: db_dependency):
     if not obj:
         raise HTTPException(status_code=404, detail="QR Code not found")
 
-	# buffer is an in-memory bytes container/memory space (in RAM). 
-	# Python exposes it as a file-like object, so we can use file operations (read, write, seek) without touching disk.
+    # buffer is an in-memory bytes container (RAM).
+    # Python exposes it as a file-like object, so you can use file operations (read, write, seek) without disk IO.
     cache_key = f"qrcode:image:{obj.qr_code_id}"
     cached = cache_get_bytes(cache_key)
     if cached:
