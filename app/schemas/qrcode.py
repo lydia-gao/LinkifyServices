@@ -11,7 +11,7 @@ class QRCodeRequest(BaseModel):
 class QRCodeResponse(BaseModel):
     original_url: str
     qr_code_id: str
-    qr_code_image: str
+    image_url: str
     title: str | None = None
     description: Optional[str] = None
     scans: int

@@ -70,7 +70,6 @@ async def get_barcode_image(barcode_id: str, db: db_dependency):
 
     buffer = to_barcode(
         original_url=f"{settings.base_url}/barcodes/{obj.barcode_id}",
-        file_path=None
     )
     img_bytes = buffer.getvalue()
     cache_set_bytes(cache_key, img_bytes, ttl_seconds=3600)

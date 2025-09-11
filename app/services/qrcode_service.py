@@ -27,11 +27,11 @@ def create_qrcode_logic(user_id: int, req: QRCodeRequest, db: Session) -> QRCode
     else:
         raise ValueError("Failed to generate unique QR code ID after several attempts.")
 
-    qr_code_image = to_qr_code(qr_code.original_url)
+    image_url = f"{settings.base_url}/qrcodes/{qr_code.qr_code_id}/image"
     return QRCodeResponse(
         original_url=qr_code.original_url,
         qr_code_id=qr_code.qr_code_id,
-        qr_code_image=qr_code_image,
+        image_url=image_url,
         title=qr_code.title,
         description=qr_code.description,
         scans=qr_code.scans,

@@ -68,7 +68,6 @@ async def get_qrcode_image(qr_code_id: str, db: db_dependency):
 
     buffer = to_qr_code(
         original_url=f"{settings.base_url}/qrcode/{obj.qr_code_id}", 
-        file_path=None
     )
     img_bytes = buffer.getvalue()
     cache_set_bytes(cache_key, img_bytes, ttl_seconds=3600)

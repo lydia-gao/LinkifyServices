@@ -32,4 +32,5 @@ def get_task_info(task_id: str) -> dict:
 # Expose a module-level Celery instance so we can run:
 # celery -A app.celery_app.celery worker ...
 celery = create_celery()
+celery.autodiscover_tasks(['app.celery_tasks'])
 

@@ -11,7 +11,7 @@ class BarcodeRequest(BaseModel):
 class BarcodeResponse(BaseModel):
     original_url: str
     barcode_id: str
-    barcode_image: str
+    image_url: str
     title: str | None = None
     description: Optional[str] = None
     scans: int

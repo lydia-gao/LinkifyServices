@@ -27,11 +27,11 @@ def create_barcode_logic(user_id: int, req: BarcodeRequest, db: Session) -> Barc
     else:
         raise ValueError("Failed to generate unique barcode_id after several attempts.")
 
-    barcode_image = to_barcode(barcode.original_url)
+    image_url = f"{settings.base_url}/barcodes/{barcode.barcode_id}/image"
     return BarcodeResponse(
         original_url=barcode.original_url,
         barcode_id=barcode.barcode_id,
-        barcode_image=barcode_image,
+        image_url=image_url,
         title=barcode.title,
         description=barcode.description,
         scans=barcode.scans,
