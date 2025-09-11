@@ -41,19 +41,28 @@ async def create_barcode(
 
 
 # 2.b. Generate Barcode (async via Celery)
+
+# 4.1.b. Generate Barcode (Async, Celery)
 @router.post("/async", status_code=status.HTTP_202_ACCEPTED)
 async def create_barcode_async(
     user: user_dependency,
     req: BarcodeRequest
 ):
     task = create_barcode_task.apply_async(args=[user.get("id"), req.model_dump()])
-    return JSONResponse({"task_id": task.id})
+    return {"task_id": task.id, "status": "pending"}
 
 
 # Task status
+
+# 4.4. Get Barcode Task Status (Celery)
 @router.get("/task/{task_id}")
 async def get_barcode_task_status(task_id: str):
-    return get_task_info(task_id)
+    info = get_task_info(task_id)
+    return {
+        "task_id": info["task_id"],
+        "status": info["task_status"],
+        "result": info["task_result"] if info["task_status"] == "SUCCESS" else None
+    }
 
 
 # 3. Get Barcode Image

@@ -37,19 +37,30 @@ async def create_qrcode(
 
 
 # 3.1.b. Generate QR Code (async via Celery)
+
+# 3.1.b. Generate QR Code (Async, Celery)
 @router.post("/async", status_code=status.HTTP_202_ACCEPTED)
 async def create_qrcode_async(
     user: user_dependency,
     req: QRCodeRequest
 ):
+    # Celery任务参数必须是dict，且用 model_dump() 传递
     task = create_qrcode_task.apply_async(args=[user.get("id"), req.model_dump()])
-    return JSONResponse({"task_id": task.id})
+    return {"task_id": task.id, "status": "pending"}
 
 
 # Task status
+
+# 3.4. Get QR Code Task Status (Celery)
 @router.get("/task/{task_id}")
 async def get_qrcode_task_status(task_id: str):
-    return get_task_info(task_id)
+    info = get_task_info(task_id)
+    # 兼容API文档格式
+    return {
+        "task_id": info["task_id"],
+        "status": info["task_status"],
+        "result": info["task_result"] if info["task_status"] == "SUCCESS" else None
+    }
 
 
 # 3.2. Get QR Code Image
