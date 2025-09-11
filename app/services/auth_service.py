@@ -1,12 +1,5 @@
-from datetime import timedelta, timezone
-import datetime
-from typing import Annotated
-from fastapi.security import OAuth2PasswordBearer
-from jose import jwt, JWTError
-from app.core.security import bcrypt_context, SECRET_KEY, ALGORITHM
-from fastapi import Depends, Depends, HTTPException, status
+from app.core.security import bcrypt_context
 from app.models import User
-from app.core.security import oauth2_bearer
 
 
 def authenticate_user(db, username: str, password: str):
