@@ -9,18 +9,18 @@
   - [Overview](#overview)
   - [API Endpoints](#api-endpoints)
     - [1. User Management Endpoints](#1-user-management-endpoints)
-      - [1.1. Register User (Username/Password)](#11-register-user-usernamepassword)
-      - [1.2. Register with Google](#12-register-with-google)
-      - [1.3. Login (Username/Password)](#13-login-usernamepassword)
-      - [1.4. Logout (Client-side)](#14-logout-client-side)
-      - [1.5. Get User Profile](#15-get-user-profile)
-      - [1.6. Update User Profile](#16-update-user-profile)
+      [1.1. Register User (Username/Password)](#11-register-user-usernamepassword)
+      [1.2. Login (OAuth2 Password Flow)](#12-login-oauth2-password-flow)
+      [1.3. Logout (Client-side)](#13-logout-client-side)
+      [1.4. Get Current User](#14-get-current-user)
     - [2. Short URL Endpoints](#2-short-url-endpoints)
       - [2.1. Create Short URL](#21-create-short-url)
-      - [2.2. Redirect from Short URL](#22-redirect-from-short-url)
-      - [2.3. Set or Update Alias](#23-set-or-update-alias)
-      - [2.4. Get Alias](#24-get-alias)
-      - [2.5. Remove Alias](#25-remove-alias)
+      - [2.2. List My Short URLs](#22-list-my-short-urls)
+      - [2.3. Redirect from Short URL](#23-redirect-from-short-url)
+      - [2.4. Check Alias Availability](#24-check-alias-availability)
+      - [2.5. Set or Update Alias](#25-set-or-update-alias)
+      - [2.6. Get Alias](#26-get-alias)
+      - [2.7. Remove Alias](#27-remove-alias)
     - [3. QR Code Endpoints](#3-qr-code-endpoints)
       - [3.1. Generate QR Code (Sync)](#31-generate-qr-code-sync)
       - [3.1.b. Generate QR Code (Async, Celery)](#31b-generate-qr-code-async-celery)
@@ -49,7 +49,6 @@ This document outlines the API endpoints for the Linkify service. Linkify allows
 
 1. **User Management**
    - Create user accounts (username/password or Google)
-   - Login and logout via JWT authentication
    - Manage user profile information
 2. **Short URLs**
    - Create short URLs from long ones with automatic title extraction
@@ -72,11 +71,12 @@ This document outlines the API endpoints for the Linkify service. Linkify allows
 
 ### 1. User Management Endpoints
 
-#### 1.1. Register User (Username/Password)
+      **Endpoint:** `/qrcodes/`
+      **Headers:**
 
-**Purpose:** Create a new user account with username and password.
+      - Authorization: Bearer {access_token}
 
-**Endpoint:** `/auth/register`
+**Endpoint:** `/auth/`
 
 **Method:** `POST`
 
@@ -101,74 +101,34 @@ This document outlines the API endpoints for the Linkify service. Linkify allows
 }
 ```
 
----
-
-#### 1.2. Register with Google
-
-**Purpose:** Create a new user account with Google authentication.
-
-**Endpoint:** `/auth/google`
-
-**Method:** `POST`
-
-**Request Body:**
-
-```json
-{
-  "token": "google_oauth_token"
-}
-```
-
-**Response:** (201 Created)
-
-```json
-{
-  "id": 43,
-  "username": "lydiagao",
-  "email": "lydia@example.com",
-  "created_at": "2025-05-15T14:35:00Z",
-  "auth_provider": "google"
-}
-```
+      **Endpoint:** `/qrcodes/async`
 
 ---
 
-#### 1.3. Login (Username/Password)
+#### 1.2. Login (OAuth2 Password Flow)
 
-**Purpose:** Authenticate user and get JWT access token and refresh token.
+**Purpose:** Authenticate user and get JWT access token.
 
-**Endpoint:** `/auth/login`
+**Endpoint:** `/auth/token`
 
 **Method:** `POST`
 
-**Request Body:**
+**Request:** `application/x-www-form-urlencoded`
 
-```json
-{
-  "username": "lydiagao",
-  "password": "securepassword123"
-}
-```
+Fields:
+"status": "SUCCESS",
+"result": {
 
 **Response:** (200 OK)
 
 ```json
 {
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "token_type": "bearer",
-  "expires_in": 3600,
-  "user": {
-    "id": 42,
-    "username": "lydiagao",
-    "email": "lydia@example.com"
-  }
+  "access_token": "<jwt>",
+  "token_type": "bearer"
 }
 ```
 
 ---
-
-#### 1.4. Logout (Client-side)
 
 **Purpose:** Client removes tokens from storage. No server-side action required with pure JWT.
 
@@ -176,11 +136,11 @@ This document outlines the API endpoints for the Linkify service. Linkify allows
 
 ---
 
-#### 1.5. Get User Profile
+#### 1.4. Get Current User
 
 **Purpose:** Retrieve current user profile information.
 
-**Endpoint:** `/users/me`
+**Endpoint:** `/users/`
 
 **Method:** `GET`
 
@@ -191,10 +151,10 @@ This document outlines the API endpoints for the Linkify service. Linkify allows
 **Response:** (200 OK)
 
 ```json
-{
-  "id": 42,
-  "username": "lydiagao",
-  "email": "lydia@example.com",
+      **Endpoint:** `/barcodes/`
+      **Headers:**
+
+      - Authorization: Bearer {access_token}
   "created_at": "2025-05-15T14:30:00Z",
   "stats": {
     "urls_created": 15,
@@ -212,7 +172,21 @@ This document outlines the API endpoints for the Linkify service. Linkify allows
 
 **Endpoint:** `/users/me`
 
-**Method:** `PATCH`
+> Note: Update profile endpoint is not implemented in the current code.
+
+---
+
+### 2. Short URL Endpoints
+
+#### 2.1. Create Short URL
+
+      **Endpoint:** `/barcodes/async`
+
+**Purpose:** Convert a long URL into a short URL with a randomly generated code. Automatically extracts website title.
+
+**Endpoint:** `/shorturls/`
+
+**Method:** `POST`
 
 **Headers:**
 
@@ -221,43 +195,7 @@ This document outlines the API endpoints for the Linkify service. Linkify allows
 **Request Body:**
 
 ```json
-{
-  "username": "lydiagao_new",
-  "email": "new_lydia@example.com"
-}
-```
-
-**Response:** (200 OK)
-
-```json
-{
-  "id": 42,
-  "username": "lydiagao_new",
-  "email": "new_lydia@example.com",
-  "created_at": "2025-05-15T14:30:00Z"
-}
-```
-
----
-
-### 2. Short URL Endpoints
-
-#### 2.1. Create Short URL
-
-**Purpose:** Convert a long URL into a short URL with a randomly generated code. Automatically extracts website title.
-
-**Endpoint:** `/shorten/`
-
-**Method:** `POST`
-
-**Headers:**
-
-- Authorization: Bearer {access_token} (optional, for authenticated users)
-
-**Request Body:**
-
-```json
-{
+        "status": "SUCCESS",
   "original_url": "https://example.com/your/long/url",
   "alias": "your-custom-alias" // optional: custom alias (3–30 chars, letters/numbers/_/-)
 }
@@ -284,11 +222,23 @@ This document outlines the API endpoints for the Linkify service. Linkify allows
 
 ---
 
-#### 2.2. Redirect from Short URL
+#### 2.2. List My Short URLs
+
+**Purpose:** List all short URLs for the current user.
+
+**Endpoint:** `/shorturls/`
+
+**Method:** `GET`
+
+**Response:** (200 OK) Array of user's short URLs.
+
+---
+
+#### 2.3. Redirect from Short URL
 
 **Purpose:** Redirect visitors to the original URL when they use a short link.
 
-**Endpoint:** `/{short_code}`
+**Endpoint:** `/shorturls/{short_code}`
 
 **Method:** `GET`
 
@@ -305,11 +255,31 @@ This document outlines the API endpoints for the Linkify service. Linkify allows
 
 ---
 
-#### 2.3. Set or Update Alias
+#### 2.4. Check Alias Availability
+
+**Endpoint:** `/shorturls/aliases/check`
+
+**Method:** `POST`
+
+**Request Body:**
+
+```json
+{ "alias": "your-custom-alias" }
+```
+
+**Response:**
+
+```json
+{ "available": true }
+```
+
+---
+
+#### 2.5. Set or Update Alias
 
 **Purpose:** Assign or change a custom alias for a short code. Aliases can be set either at creation time (see Create Short URL) or updated later using this endpoint.
 
-**Endpoint:** `/urls/{shortCode}`
+**Endpoint:** `/shorturls/{short_code}/alias`
 
 **Method:** `PATCH`
 
@@ -341,11 +311,11 @@ This document outlines the API endpoints for the Linkify service. Linkify allows
 
 ---
 
-#### 2.4. Get Alias
+#### 2.6. Get Alias
 
 **Purpose:** Retrieve the custom alias for a given short code, if one exists.
 
-**Endpoint:** `/urls/{shortCode}/alias`
+**Endpoint:** `/shorturls/{short_code}/alias`
 
 **Method:** `GET`
 
@@ -364,11 +334,11 @@ This document outlines the API endpoints for the Linkify service. Linkify allows
 
 ---
 
-#### 2.5. Remove Alias
+#### 2.7. Remove Alias
 
 **Purpose:** Delete the custom alias and revert to the default randomly generated code.
 
-**Endpoint:** `/urls/{shortCode}/alias`
+**Endpoint:** `/shorturls/{short_code}/alias`
 
 **Method:** `DELETE`
 
@@ -392,7 +362,7 @@ This document outlines the API endpoints for the Linkify service. Linkify allows
 
 **Headers:**
 
-- Authorization: Bearer {access_token} (optional, for authenticated users)
+- Authorization: Bearer {access_token}
 
 **Request Body:**
 
