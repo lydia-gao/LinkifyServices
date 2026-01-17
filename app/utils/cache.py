@@ -1,10 +1,9 @@
 from typing import Optional, Any
 import json
-import redis
-from app.core.config import settings
+from app.utils.redis_client import get_redis_client
 
 
-_redis = redis.from_url(settings.redis_url)
+_redis = get_redis_client()
 
 
 def cache_set_bytes(key: str, data: bytes, ttl_seconds: Optional[int] = 300) -> None:

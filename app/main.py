@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request, status
 from app.db.init_db import Base
 from app.db.session import engine
-from app.api import analytics, barcode, qrcode, shorturl, metadata, auth, users
+from app.api import analytics, barcode, qrcode, shorturl, metadata, auth, users, realtime
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 from starlette.middleware.sessions import SessionMiddleware
@@ -23,6 +23,7 @@ app.include_router(shorturl.router)
 app.include_router(metadata.router)
 app.include_router(auth.router)
 app.include_router(users.router)
+app.include_router(realtime.router)
 
 # Initialize Celery app (keeps config in one place; workers can import `app.celery_app`)
 celery = create_celery()

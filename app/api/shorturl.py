@@ -1,10 +1,16 @@
+from uuid import uuid4
+
+from celery import chord
 from fastapi import APIRouter, HTTPException, status, Response
+
 from app.models import ShortUrl
 from app.utils.redirect_utils import redirect_to_original
 from app.services.shorturl_service import (
 	create_short_url_logic, check_alias_logic, update_alias_logic, get_alias_logic, remove_alias_logic)
 from app.core.dependencies import db_dependency, user_dependency
-from app.schemas.shorturl import AliasRequest, ShortenRequest
+from app.celery_tasks.tasks import create_shorturl_task, notify_batch_complete
+from app.utils.redis_client import build_ws_channel
+from app.schemas.shorturl import AliasRequest, ShortenRequest, ShortUrlBatchRequest
 
 router = APIRouter(
 	prefix="/shorturls",
@@ -27,6 +33,25 @@ async def create_short_url(
 		return create_short_url_logic(user.get("id"), req, db)
 	except ValueError as e:
 		raise HTTPException(status_code=409, detail=str(e))
+
+
+@router.post("/batch", status_code=status.HTTP_202_ACCEPTED)
+async def create_short_url_batch(user: user_dependency, payload: ShortUrlBatchRequest):
+	if not payload.items:
+		raise HTTPException(status_code=400, detail="At least one URL is required")
+
+	user_id = user.get("id")
+	batch_id = str(uuid4())
+	signatures = [create_shorturl_task.s(user_id, item.model_dump()) for item in payload.items]
+	callback = notify_batch_complete.s(user_id=user_id, batch_id=batch_id, entity="shorturl")
+	chord_result = chord(signatures)(callback)
+	return {
+		"success": True,
+		"batch_id": batch_id,
+		"task_id": chord_result.id,
+		"status": "pending",
+		"websocket_channel": build_ws_channel(user_id),
+	}
 
 # 2.2. Redirect from Short URL
 @router.get("/{short_code}", status_code=status.HTTP_307_TEMPORARY_REDIRECT)

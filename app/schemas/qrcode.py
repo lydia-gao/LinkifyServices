@@ -17,3 +17,7 @@ class QRCodeResponse(BaseModel):
     scans: int
     user_id: int | None = None
     created_at: str
+
+
+class QRCodeBatchRequest(BaseModel):
+    items: list[QRCodeRequest] = Field(..., min_length=1, max_length=50)

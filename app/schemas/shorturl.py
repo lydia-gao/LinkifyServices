@@ -26,3 +26,7 @@ class ShortenResponse(BaseModel):
     clicks: int
     user_id: int | None = None
     created_at: str
+
+
+class ShortUrlBatchRequest(BaseModel):
+    items: list[ShortenRequest] = Field(..., min_length=1, max_length=50)

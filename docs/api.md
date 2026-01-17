@@ -350,6 +350,58 @@ Fields:
 
 ---
 
+#### 2.8. Batch Create Short URLs (Async)
+
+**Purpose:** Submit multiple URLs in one request. Each short link is generated asynchronously via Celery workers, and the completion result is pushed over the websocket channel.
+
+**Endpoint:** `/shorturls/batch`
+
+**Method:** `POST`
+
+**Headers:**
+
+- Authorization: Bearer {access_token}
+
+**Request Body:**
+
+```json
+{
+  "items": [
+    { "original_url": "https://example.com/one" },
+    { "original_url": "https://example.com/two", "alias": "two" }
+  ]
+}
+```
+
+`items` accepts 1–50 `ShortenRequest` payloads.
+
+**Response:** (202 Accepted)
+
+```json
+{
+  "success": true,
+  "batch_id": "6f90b8f0-db49-42c0-8c89-32c8f4b3dc31",
+  "task_id": "c6fd9932-4972-4b0c-b468-4d7b782f1653",
+  "status": "pending",
+  "websocket_channel": "ws:user:42"
+}
+```
+
+- `batch_id` lets the UI correlate websocket payloads with a submission.
+- `websocket_channel` is the Redis pub/sub channel listened to by `/ws/batch`.
+
+**Completion Flow:** When every Celery task in the batch finishes, the backend publishes a websocket event:
+
+```json
+{
+  "type": "batch_completed",
+  "entity": "shorturl",
+  "batch_id": "6f90b8f0-db49-42c0-8c89-32c8f4b3dc31",
+  "count": 2,
+  "items": [ {"short_code": "abc123", ...}, {"short_code": "def456", ...} ]
+}
+```
+
 ### 3. QR Code Endpoints
 
 #### 3.1. Generate QR Code (Sync)
@@ -397,6 +449,43 @@ Fields:
 **Method:** `POST`
 
 **Request Body:**
+
+#### 3.1.c. Batch Generate QR Codes (Async)
+
+**Purpose:** Kick off multiple QR code jobs at once. Each job runs inside RabbitMQ/Celery workers and the aggregate result is delivered through the websocket channel.
+
+**Endpoint:** `/qrcodes/batch`
+
+**Method:** `POST`
+
+**Headers:**
+
+- Authorization: Bearer {access_token}
+
+**Request Body:**
+
+```json
+{
+  "items": [
+    { "original_url": "https://example.com/alpha" },
+    { "original_url": "https://example.com/beta", "title": "Beta" }
+  ]
+}
+```
+
+**Response:** (202 Accepted)
+
+```json
+{
+  "success": true,
+  "batch_id": "05cb6c98-4a80-459f-9791-9c0d3a1bc13f",
+  "task_id": "2f6c5bcd-9fc8-4d37-8e53-2b8962839f1a",
+  "status": "pending",
+  "websocket_channel": "ws:user:42"
+}
+```
+
+The websocket payload mirrors the short URL batch example but `"entity": "qrcode"` and each entry contains the QR code metadata plus `image_url`.
 
 ```json
 {
@@ -855,3 +944,31 @@ The Linkify service automatically extracts website titles when creating URLs, QR
 - This title is stored in the database and returned in API responses
 - If extraction fails (network issues, invalid URL, missing title), the title field will be null
 - No additional input is required from users for this feature
+
+## Realtime Batch Notifications
+
+- **Endpoint:** `ws://{host}/ws/batch?token=<jwt>`
+- **Auth:** Supply the same Bearer token used for REST calls via the `token` query parameter.
+- **Channel:** Each user receives messages on `ws:user:{user_id}`; the server relays Redis pub/sub events to the websocket.
+
+### Connection Lifecycle
+
+1. Open a websocket and pass the JWT in the query string.
+2. The backend validates the token and responds with `{ "type": "ws_ready", "channel": "ws:user:42" }`.
+3. Keep the socket open to receive batch updates, e.g.:
+
+```json
+{
+  "type": "batch_completed",
+  "entity": "shorturl",
+  "batch_id": "6f90b8f0-db49-42c0-8c89-32c8f4b3dc31",
+  "count": 2,
+  "items": [ ... ]
+}
+```
+
+### Frontend Tips
+
+- Use `batch_id` to correlate websocket messages with submitted forms.
+- Reconnect on failure and re-fetch any in-progress batches via REST in case updates were missed.
+- Multiple browser tabs for the same user can subscribe simultaneously; each socket will receive the same events.

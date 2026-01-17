@@ -16,7 +16,7 @@ To run the application, use the following command:
 
 ```bash
 # Windows local (solo, single-worker):
-celery -A app.celery_app.celery worker --pool=solo --loglevel=info
+celery -A app.celery_app.celery worker --pool=solo --loglevel=info -Q qrcode,shorturl,barcode,ws,celery
 # Docker (parallel workers):
 celery -A main.celery worker --loglevel=info -Q universities,university --concurrency=3
 

@@ -1,16 +1,19 @@
+from uuid import uuid4
+
+from celery import chord
 from fastapi import APIRouter, HTTPException, status, Response
+
 from app.models import Qrcode
 from app.core.config import settings
 from app.services.qrcode_service import create_qrcode_logic, get_all_qrcodes_for_user
 from app.celery_app import get_task_info
-from app.celery_tasks.tasks import create_qrcode_task
-from starlette.responses import JSONResponse
-from app.utils.qrcode_utils import to_qr_code
+from app.celery_tasks.tasks import create_qrcode_task, notify_batch_complete
 from app.utils.cache import cache_get_s3_url, cache_set_s3_url
-from app.utils.s3_utils import get_image_from_s3, generate_presigned_url
+from app.utils.s3_utils import generate_presigned_url
 from app.utils.redirect_utils import redirect_to_original
+from app.utils.redis_client import build_ws_channel
 from app.core.dependencies import db_dependency, user_dependency
-from app.schemas.qrcode import QRCodeRequest
+from app.schemas.qrcode import QRCodeBatchRequest, QRCodeRequest
 
 
 router = APIRouter(
@@ -51,6 +54,25 @@ async def create_qrcode_async(
         "task_id": task.id,
         "status": "pending",
         "poll_url": f"{settings.base_url}/qrcodes/task/{task.id}"
+    }
+
+
+@router.post("/batch", status_code=status.HTTP_202_ACCEPTED)
+async def create_qrcode_batch(user: user_dependency, payload: QRCodeBatchRequest):
+    if not payload.items:
+        raise HTTPException(status_code=400, detail="At least one QR code payload is required")
+
+    user_id = user.get("id")
+    batch_id = str(uuid4())
+    signatures = [create_qrcode_task.s(user_id, item.model_dump()) for item in payload.items]
+    callback = notify_batch_complete.s(user_id=user_id, batch_id=batch_id, entity="qrcode")
+    chord_result = chord(signatures)(callback)
+    return {
+        "success": True,
+        "batch_id": batch_id,
+        "task_id": chord_result.id,
+        "status": "pending",
+        "websocket_channel": build_ws_channel(user_id),
     }
 
 

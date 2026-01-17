@@ -26,6 +26,8 @@ class BaseConfig:
 		Queue("celery"),
 		Queue("qrcode"),
 		Queue("barcode"),
+		Queue("shorturl"),
+		Queue("ws"),
 	)
 
 	CELERY_TASK_ROUTES = (route_task,)
